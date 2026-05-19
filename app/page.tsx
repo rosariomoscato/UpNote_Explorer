@@ -270,6 +270,20 @@ export default function Home() {
       </main>
 
       <NoteSheet note={selectedNote} open={sheetOpen} onOpenChange={setSheetOpen} />
+
+      <footer className="absolute bottom-0 left-0 right-0 z-10 py-2 text-center">
+        <p className="text-xs text-muted-foreground/40">
+          &copy; 2026, All rights reserved &mdash;{" "}
+          <a
+            href="https://rosmoscato.xyz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground/60 hover:text-primary transition-colors underline underline-offset-2"
+          >
+            Rosario Moscato
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
