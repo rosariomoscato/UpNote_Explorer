@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UpNote Knowledge Explorer
 
-## Getting Started
+![Knowledge Graph](public/graph-cover.svg)
 
-First, run the development server:
+Un'applicazione web per esplorare, cercare e interrogare le proprie note UpNote con l'aiuto dell'intelligenza artificiale.
+
+## Funzionalità
+
+| Feature | Descrizione |
+|---------|-------------|
+| **Grafo interattivo** | Visualizza le note come nodi colorati per categoria, con collegamenti cross-topic evidenziati. Clicca un nodo per vedere l'anteprima. |
+| **Ricerca full-text** | Motore di ricerca fuzzy (fuse.js) su titolo, contenuto e collegamenti delle note. |
+| **RAG con AI** | Fai domande in linguaggio naturale e ottieni risposte generate da un LLM, con le fonti citate e cliccabili. |
+| **Temi** | Dark mode futuristico con effetti spaziali (default) e light mode. |
+| **Sidebar categorie** | Filtra il grafo per categoria (AI Ethics, Claude Code, Estratti, ecc.). |
+
+## Stack
+
+- **Next.js 16** (App Router, React 19)
+- **ShadCN UI** + **Tailwind CSS v4**
+- **vis-network** — grafo interattivo
+- **fuse.js** — ricerca fuzzy
+- **Vercel AI SDK** — integrazione LLM con streaming
+- **OpenRouter** / **Ollama** / **OpenAI** — provider LLM
+
+## Installazione
 
 ```bash
+# Clona il repo
+git clone https://github.com/tuo-username/upnote-explorer.git
+cd upnote-explorer
+
+# Installa dipendenze
+npm install
+
+# Pre-processa le note (genera data/notes.json)
+npx tsx scripts/build-notes.ts
+
+# Avvia il dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Apri [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Configurazione
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copia `.env.example` in `.env.local` e configura il provider LLM:
 
-## Learn More
+### OpenRouter (consigliato, modelli gratuiti)
 
-To learn more about Next.js, take a look at the following resources:
+```env
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Ollama (locale)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+```
 
-## Deploy on Vercel
+### OpenAI
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Come aggiungere le tue note
+
+1. Esporta le note da UpNote (cartella con file `.md`)
+2. Modifica `scripts/build-notes.ts` puntando `NOTES_DIR` alla tua cartella
+3. Esegui `npx tsx scripts/build-notes.ts`
+4. Le note vengono indicizzate in `data/notes.json`
+
+## Struttura
+
+```
+upnote-explorer/
+├── app/
+│   ├── layout.tsx            # Root layout + theming
+│   ├── page.tsx              # Pagina principale
+│   └── api/
+│       ├── search/route.ts   # Ricerca fuse.js
+│       └── ask/route.ts      # RAG con LLM
+├── components/
+│   ├── note-graph.tsx        # Grafo vis.js
+│   ├── search-bar.tsx        # Barra di ricerca
+│   ├── search-results.tsx    # Risultati testuali
+│   ├── rag-answer.tsx        # Risposta AI + fonti
+│   ├── sidebar-nav.tsx       # Sidebar categorie
+│   ├── note-sheet.tsx        # Anteprima nota
+│   ├── space-background.tsx  # Sfondo animato
+│   └── theme-toggle.tsx      # Toggle dark/light
+├── lib/
+│   ├── types.ts              # Tipi TypeScript
+│   ├── notes-loader.ts       # Caricamento note
+│   └── search-engine.ts      # Fuse.js config
+├── scripts/
+│   └── build-notes.ts        # Pre-processing .md → JSON
+└── data/
+    └── notes.json            # Note indicizzate (generato)
+```
+
+## Licenza
+
+MIT
