@@ -6,6 +6,7 @@ export interface Note {
   content: string;
   filePath: string;
   links: string[];
+  attachments: string[];
   date: string;
   created: string;
 }

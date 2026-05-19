@@ -69,6 +69,26 @@ function extractLinks(content: string): string[] {
   return [...new Set(links)];
 }
 
+function extractAttachments(content: string): string[] {
+  const attachments: string[] = [];
+
+  const imgPattern = /!\[[^\]]*\]\(Files\/([^)]+)\)/g;
+  let match;
+  while ((match = imgPattern.exec(content)) !== null) {
+    attachments.push(decodeURIComponent(match[1].trim()));
+  }
+
+  const linkPattern = /\[[^\]]+\]\(Files\/([^)]+)\)/g;
+  while ((match = linkPattern.exec(content)) !== null) {
+    const f = decodeURIComponent(match[1].trim());
+    if (!attachments.includes(f)) {
+      attachments.push(f);
+    }
+  }
+
+  return [...new Set(attachments)];
+}
+
 function extractTitle(content: string, fileName: string): string {
   const titleMatch = content.match(/^##\s+\S+\s*\|\s*(.+)$/m);
   if (titleMatch) return titleMatch[1].trim();
@@ -91,6 +111,7 @@ function processNotesFromDir(notesDir: string): Note[] {
     const title = extractTitle(content, file);
     const cleanContent = stripHtml(content);
     const links = extractLinks(content);
+    const attachments = extractAttachments(content);
 
     notes.push({
       id: slugify(title),
@@ -100,6 +121,7 @@ function processNotesFromDir(notesDir: string): Note[] {
       content: cleanContent,
       filePath: file,
       links,
+      attachments,
       date: frontmatter.date || "",
       created: frontmatter.created || "",
     });
