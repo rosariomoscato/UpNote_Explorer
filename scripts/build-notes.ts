@@ -5,45 +5,33 @@ import { Note, extractCategory, CATEGORY_COLORS } from "../lib/types";
 
 const EXPORT_ROOT = path.resolve(__dirname, "../..");
 
-function findLatestExportDir(): string {
+function findExportDirs(): string[] {
   const entries = fs.readdirSync(EXPORT_ROOT, { withFileTypes: true });
-  const exportDirs = entries
+  return entries
     .filter((e) => e.isDirectory() && e.name.startsWith("UpNote_"))
     .map((e) => ({
       name: e.name,
       path: path.join(EXPORT_ROOT, e.name),
     }))
-    .sort((a, b) => b.name.localeCompare(a.name));
-
-  if (exportDirs.length === 0) {
-    console.error("Nessuna cartella UpNote_* trovata in", EXPORT_ROOT);
-    process.exit(1);
-  }
-
-  const latest = exportDirs[0];
-  if (exportDirs.length > 1) {
-    console.log(`Trovate ${exportDirs.length} cartelle di export:`);
-    exportDirs.forEach((d, i) => console.log(`  ${i === 0 ? "→" : " "} ${d.name}`));
-    console.log(`Usando la più recente: ${latest.name}\n`);
-  }
-
-  return latest.path;
+    .sort((a, b) => b.name.localeCompare(a.name))
+    .map((d) => d.path);
 }
 
-function cleanupOldExports(currentDir: string): void {
+function cleanupOldExports(currentDirs: string[]): void {
   const entries = fs.readdirSync(EXPORT_ROOT, { withFileTypes: true });
+  const knownPaths = new Set(currentDirs);
   const oldDirs = entries
     .filter((e) => e.isDirectory() && e.name.startsWith("UpNote_"))
     .map((e) => path.join(EXPORT_ROOT, e.name))
-    .filter((p) => p !== currentDir);
+    .filter((p) => !knownPaths.has(p));
 
   for (const dir of oldDirs) {
-    console.log(`Rimozione vecchio export: ${path.basename(dir)}`);
+    console.log(`  Rimozione: ${path.basename(dir)}`);
     fs.rmSync(dir, { recursive: true, force: true });
   }
 
   if (oldDirs.length > 0) {
-    console.log(`Rimosse ${oldDirs.length} vecchia/e cartella/e.\n`);
+    console.log(`  Rimosse ${oldDirs.length} vecchia/e cartella/e.\n`);
   }
 }
 
@@ -92,7 +80,7 @@ function extractTitle(content: string, fileName: string): string {
   return fileName.replace(/^#[^ ]+\s+/, "").replace(/\.md$/, "");
 }
 
-function processNotes(notesDir: string): Note[] {
+function processNotesFromDir(notesDir: string): Note[] {
   const files = fs.readdirSync(notesDir).filter((f) => f.endsWith(".md"));
   const notes: Note[] = [];
 
@@ -120,25 +108,49 @@ function processNotes(notesDir: string): Note[] {
   return notes;
 }
 
+function mergeNotes(allDirs: string[]): Note[] {
+  const noteMap = new Map<string, Note>();
+
+  for (const dir of allDirs) {
+    const notes = processNotesFromDir(dir);
+    for (const note of notes) {
+      noteMap.set(note.id, note);
+    }
+  }
+
+  return Array.from(noteMap.values());
+}
+
 function main() {
   const cleanup = process.argv.includes("--cleanup");
 
   console.log("=== UpNote Knowledge Explorer - Build Notes ===\n");
 
-  const notesDir = findLatestExportDir();
-  console.log(`Cartella export: ${notesDir}\n`);
+  const allDirs = findExportDirs();
 
-  const notes = processNotes(notesDir);
+  if (allDirs.length === 0) {
+    console.error("Nessuna cartella UpNote_* trovata in", EXPORT_ROOT);
+    process.exit(1);
+  }
+
+  console.log(`Trovate ${allDirs.length} cartella/e di export:`);
+  for (const dir of allDirs) {
+    const mdCount = fs.readdirSync(dir).filter((f) => f.endsWith(".md")).length;
+    console.log(`  - ${path.basename(dir)} (${mdCount} .md)`);
+  }
+  console.log("");
+
+  const mergedNotes = mergeNotes(allDirs);
 
   const outPath = path.resolve(__dirname, "../data/notes.json");
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, JSON.stringify(notes, null, 2), "utf-8");
+  fs.writeFileSync(outPath, JSON.stringify(mergedNotes, null, 2), "utf-8");
 
-  console.log(`✓ Processate ${notes.length} note → data/notes.json`);
+  console.log(`✓ Unite e processate ${mergedNotes.length} note → data/notes.json`);
 
   if (cleanup) {
-    console.log("");
-    cleanupOldExports(notesDir);
+    console.log("\nPulizia vecchi export:");
+    cleanupOldExports(allDirs);
   }
 
   console.log("✓ Completato.\n");
