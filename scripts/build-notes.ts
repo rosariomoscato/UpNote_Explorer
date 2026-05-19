@@ -121,6 +121,43 @@ function mergeNotes(allDirs: string[]): Note[] {
   return Array.from(noteMap.values());
 }
 
+function mergeFiles(allDirs: string[]): number {
+  const publicFilesDir = path.resolve(__dirname, "../public/files");
+
+  if (fs.existsSync(publicFilesDir)) {
+    fs.rmSync(publicFilesDir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(publicFilesDir, { recursive: true });
+
+  let totalFiles = 0;
+  const seenNames = new Map<string, string>();
+
+  for (const dir of [...allDirs].reverse()) {
+    const filesDir = path.join(dir, "Files");
+    if (!fs.existsSync(filesDir)) continue;
+
+    const entries = fs.readdirSync(filesDir);
+    for (const entry of entries) {
+      const srcPath = path.join(filesDir, entry);
+      if (!fs.statSync(srcPath).isFile()) continue;
+
+      let destName = entry;
+      if (seenNames.has(entry.toLowerCase())) {
+        const ext = path.extname(entry);
+        const base = path.basename(entry, ext);
+        destName = `${base}_${seenNames.size}${ext}`;
+      }
+      seenNames.set(entry.toLowerCase(), destName);
+
+      const destPath = path.join(publicFilesDir, destName);
+      fs.copyFileSync(srcPath, destPath);
+      totalFiles++;
+    }
+  }
+
+  return totalFiles;
+}
+
 function main() {
   const cleanup = process.argv.includes("--cleanup");
 
@@ -147,6 +184,9 @@ function main() {
   fs.writeFileSync(outPath, JSON.stringify(mergedNotes, null, 2), "utf-8");
 
   console.log(`✓ Unite e processate ${mergedNotes.length} note → data/notes.json`);
+
+  const totalFiles = mergeFiles(allDirs);
+  console.log(`✓ Copiati ${totalFiles} file allegati → public/files/`);
 
   if (cleanup) {
     console.log("\nPulizia vecchi export:");

@@ -39,6 +39,9 @@ yarn-error.log*
 # generated notes data
 /data/notes.json
 
+# generated attachment files
+/public/files/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
