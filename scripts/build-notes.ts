@@ -133,7 +133,7 @@ function processNotesFromDir(notesDir: string): Note[] {
 function mergeNotes(allDirs: string[]): Note[] {
   const noteMap = new Map<string, Note>();
 
-  for (const dir of allDirs) {
+  for (const dir of [...allDirs].reverse()) {
     const notes = processNotesFromDir(dir);
     for (const note of notes) {
       noteMap.set(note.id, note);
@@ -143,16 +143,16 @@ function mergeNotes(allDirs: string[]): Note[] {
   return Array.from(noteMap.values());
 }
 
-function mergeFiles(allDirs: string[]): number {
+function mergeFiles(allDirs: string[]): Map<string, string> {
   const publicFilesDir = path.resolve(__dirname, "../public/files");
+  const renameMap = new Map<string, string>();
 
   if (fs.existsSync(publicFilesDir)) {
     fs.rmSync(publicFilesDir, { recursive: true, force: true });
   }
   fs.mkdirSync(publicFilesDir, { recursive: true });
 
-  let totalFiles = 0;
-  const seenNames = new Map<string, string>();
+  const seenNames = new Set<string>();
 
   for (const dir of [...allDirs].reverse()) {
     const filesDir = path.join(dir, "Files");
@@ -167,17 +167,29 @@ function mergeFiles(allDirs: string[]): number {
       if (seenNames.has(entry.toLowerCase())) {
         const ext = path.extname(entry);
         const base = path.basename(entry, ext);
-        destName = `${base}_${seenNames.size}${ext}`;
+        let idx = seenNames.size;
+        destName = `${base}_${idx}${ext}`;
+        while (seenNames.has(destName.toLowerCase())) {
+          idx++;
+          destName = `${base}_${idx}${ext}`;
+        }
+        renameMap.set(entry, destName);
       }
-      seenNames.set(entry.toLowerCase(), destName);
+      seenNames.add(destName.toLowerCase());
 
       const destPath = path.join(publicFilesDir, destName);
       fs.copyFileSync(srcPath, destPath);
-      totalFiles++;
     }
   }
 
-  return totalFiles;
+  return renameMap;
+}
+
+function applyRenames(notes: Note[], renameMap: Map<string, string>): void {
+  if (renameMap.size === 0) return;
+  for (const note of notes) {
+    note.attachments = note.attachments.map((a) => renameMap.get(a) || a);
+  }
 }
 
 function main() {
@@ -199,16 +211,18 @@ function main() {
   }
   console.log("");
 
+  const renameMap = mergeFiles(allDirs);
+  const fileCount = fs.readdirSync(path.resolve(__dirname, "../public/files")).length;
+  console.log(`✓ Copiati ${fileCount} file allegati → public/files/`);
+
   const mergedNotes = mergeNotes(allDirs);
+  applyRenames(mergedNotes, renameMap);
 
   const outPath = path.resolve(__dirname, "../data/notes.json");
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(mergedNotes, null, 2), "utf-8");
 
   console.log(`✓ Unite e processate ${mergedNotes.length} note → data/notes.json`);
-
-  const totalFiles = mergeFiles(allDirs);
-  console.log(`✓ Copiati ${totalFiles} file allegati → public/files/`);
 
   if (cleanup) {
     console.log("\nPulizia vecchi export:");
