@@ -3,10 +3,49 @@ import * as path from "path";
 import matter from "gray-matter";
 import { Note, extractCategory, CATEGORY_COLORS } from "../lib/types";
 
-const NOTES_DIR = path.resolve(
-  __dirname,
-  "../../UpNote_2026-05-19_21-39-47"
-);
+const EXPORT_ROOT = path.resolve(__dirname, "../..");
+
+function findLatestExportDir(): string {
+  const entries = fs.readdirSync(EXPORT_ROOT, { withFileTypes: true });
+  const exportDirs = entries
+    .filter((e) => e.isDirectory() && e.name.startsWith("UpNote_"))
+    .map((e) => ({
+      name: e.name,
+      path: path.join(EXPORT_ROOT, e.name),
+    }))
+    .sort((a, b) => b.name.localeCompare(a.name));
+
+  if (exportDirs.length === 0) {
+    console.error("Nessuna cartella UpNote_* trovata in", EXPORT_ROOT);
+    process.exit(1);
+  }
+
+  const latest = exportDirs[0];
+  if (exportDirs.length > 1) {
+    console.log(`Trovate ${exportDirs.length} cartelle di export:`);
+    exportDirs.forEach((d, i) => console.log(`  ${i === 0 ? "→" : " "} ${d.name}`));
+    console.log(`Usando la più recente: ${latest.name}\n`);
+  }
+
+  return latest.path;
+}
+
+function cleanupOldExports(currentDir: string): void {
+  const entries = fs.readdirSync(EXPORT_ROOT, { withFileTypes: true });
+  const oldDirs = entries
+    .filter((e) => e.isDirectory() && e.name.startsWith("UpNote_"))
+    .map((e) => path.join(EXPORT_ROOT, e.name))
+    .filter((p) => p !== currentDir);
+
+  for (const dir of oldDirs) {
+    console.log(`Rimozione vecchio export: ${path.basename(dir)}`);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  if (oldDirs.length > 0) {
+    console.log(`Rimosse ${oldDirs.length} vecchia/e cartella/e.\n`);
+  }
+}
 
 function slugify(text: string): string {
   return text
@@ -53,12 +92,12 @@ function extractTitle(content: string, fileName: string): string {
   return fileName.replace(/^#[^ ]+\s+/, "").replace(/\.md$/, "");
 }
 
-function processNotes(): Note[] {
-  const files = fs.readdirSync(NOTES_DIR).filter((f) => f.endsWith(".md"));
+function processNotes(notesDir: string): Note[] {
+  const files = fs.readdirSync(notesDir).filter((f) => f.endsWith(".md"));
   const notes: Note[] = [];
 
   for (const file of files) {
-    const raw = fs.readFileSync(path.join(NOTES_DIR, file), "utf-8");
+    const raw = fs.readFileSync(path.join(notesDir, file), "utf-8");
     const { data: frontmatter, content } = matter(raw);
     const category = extractCategory(file);
     const title = extractTitle(content, file);
@@ -82,11 +121,27 @@ function processNotes(): Note[] {
 }
 
 function main() {
-  const notes = processNotes();
+  const cleanup = process.argv.includes("--cleanup");
+
+  console.log("=== UpNote Knowledge Explorer - Build Notes ===\n");
+
+  const notesDir = findLatestExportDir();
+  console.log(`Cartella export: ${notesDir}\n`);
+
+  const notes = processNotes(notesDir);
+
   const outPath = path.resolve(__dirname, "../data/notes.json");
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(notes, null, 2), "utf-8");
-  console.log(`Processed ${notes.length} notes → ${outPath}`);
+
+  console.log(`✓ Processate ${notes.length} note → data/notes.json`);
+
+  if (cleanup) {
+    console.log("");
+    cleanupOldExports(notesDir);
+  }
+
+  console.log("✓ Completato.\n");
 }
 
 main();

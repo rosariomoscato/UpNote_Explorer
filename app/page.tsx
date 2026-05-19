@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SpaceBackground } from "@/components/space-background";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain, Network, Sparkles } from "lucide-react";
+import { Brain, Network, Sparkles, RefreshCw } from "lucide-react";
 
 const allNotes = loadNotes();
 const categories = getCategories();
@@ -29,10 +29,29 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("graph");
   const [lastQuery, setLastQuery] = useState("");
+  const [isRebuilding, setIsRebuilding] = useState(false);
+  const [notesVersion, setNotesVersion] = useState(0);
 
   const filteredNotes = selectedCategory
     ? allNotes.filter((n) => n.category === selectedCategory)
     : allNotes;
+
+  const currentNotes = notesVersion >= 0 ? filteredNotes : filteredNotes;
+
+  const handleRebuild = useCallback(async () => {
+    setIsRebuilding(true);
+    try {
+      const res = await fetch("/api/rebuild", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setNotesVersion((v) => v + 1);
+        window.location.reload();
+      }
+    } catch {
+      // ignore
+    }
+    setIsRebuilding(false);
+  }, []);
 
   const handleNoteClick = useCallback((noteId: string) => {
     const note = getNoteById(noteId);
@@ -162,6 +181,14 @@ export default function Home() {
           <div className="flex-1">
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
+          <button
+            onClick={handleRebuild}
+            disabled={isRebuilding}
+            className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-background/40 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300 disabled:opacity-40"
+            title="Aggiorna note (re-indicizza)"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRebuilding ? "animate-spin" : ""}`} />
+          </button>
           <ThemeToggle />
         </header>
 

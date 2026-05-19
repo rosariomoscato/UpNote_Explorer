@@ -2,44 +2,41 @@ import Fuse from "fuse.js";
 import { Note, SearchResult } from "./types";
 import { loadNotes } from "./notes-loader";
 
-let fuseInstance: Fuse<Note> | null = null;
-let fuseRagInstance: Fuse<Note> | null = null;
+const FUSE_CONFIG_BASE = {
+  keys: [
+    { name: "title", weight: 2 },
+    { name: "category", weight: 1 },
+    { name: "content", weight: 1 },
+    { name: "links", weight: 1.5 },
+  ],
+  includeScore: true,
+  minMatchCharLength: 2,
+  ignoreLocation: true,
+};
+
+let fuseCache: { notesLen: number; instance: Fuse<Note> } | null = null;
+let fuseRagCache: { notesLen: number; instance: Fuse<Note> } | null = null;
 
 function getFuse(): Fuse<Note> {
-  if (!fuseInstance) {
-    fuseInstance = new Fuse(loadNotes(), {
-      keys: [
-        { name: "title", weight: 2 },
-        { name: "category", weight: 1 },
-        { name: "content", weight: 1 },
-        { name: "links", weight: 1.5 },
-      ],
-      threshold: 0.35,
-      includeScore: true,
-      includeMatches: true,
-      minMatchCharLength: 2,
-      ignoreLocation: true,
-    });
+  const notes = loadNotes();
+  if (!fuseCache || fuseCache.notesLen !== notes.length) {
+    fuseCache = {
+      notesLen: notes.length,
+      instance: new Fuse(notes, { ...FUSE_CONFIG_BASE, threshold: 0.35, includeMatches: true }),
+    };
   }
-  return fuseInstance;
+  return fuseCache.instance;
 }
 
 function getFuseRag(): Fuse<Note> {
-  if (!fuseRagInstance) {
-    fuseRagInstance = new Fuse(loadNotes(), {
-      keys: [
-        { name: "title", weight: 2 },
-        { name: "category", weight: 1 },
-        { name: "content", weight: 1 },
-        { name: "links", weight: 1.5 },
-      ],
-      threshold: 1.0,
-      includeScore: true,
-      minMatchCharLength: 2,
-      ignoreLocation: true,
-    });
+  const notes = loadNotes();
+  if (!fuseRagCache || fuseRagCache.notesLen !== notes.length) {
+    fuseRagCache = {
+      notesLen: notes.length,
+      instance: new Fuse(notes, { ...FUSE_CONFIG_BASE, threshold: 1.0 }),
+    };
   }
-  return fuseRagInstance;
+  return fuseRagCache.instance;
 }
 
 export function searchNotes(query: string, limit = 10): SearchResult[] {
