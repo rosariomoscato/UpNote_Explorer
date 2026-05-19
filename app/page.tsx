@@ -68,6 +68,8 @@ export default function Home() {
 
       if (mode === "text") {
         setActiveTab("results");
+        setRagAnswer("");
+        setRagSources([]);
         try {
           const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
           const data = await res.json();
