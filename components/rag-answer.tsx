@@ -1,7 +1,6 @@
 "use client";
 
 import { Note } from "@/lib/types";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles, BookOpen } from "lucide-react";
 
 interface RagAnswerProps {
@@ -26,16 +25,14 @@ export function RagAnswer({ answer, sources, isStreaming, onSourceClick }: RagAn
             <span className="shimmer-text font-semibold">Risposta AI</span>
           </h3>
         </div>
-        <ScrollArea className="max-h-[60vh]">
-          <div className="p-5">
-            <div className="text-sm leading-relaxed text-indigo-100/80 whitespace-pre-wrap">
-              {renderAnswerWithCitations(answer, sources, onSourceClick)}
-              {isStreaming && (
-                <span className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-1 rounded-sm" />
-              )}
-            </div>
+        <div className="p-5">
+          <div className="text-sm leading-relaxed text-indigo-100/80 whitespace-pre-wrap">
+            {renderAnswerWithCitations(answer, sources, onSourceClick)}
+            {isStreaming && (
+              <span className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-1 rounded-sm" />
+            )}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {sources.length > 0 && (
