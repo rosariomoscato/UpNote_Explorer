@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Search, Sparkles, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,22 @@ interface SearchBarProps {
 export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("text");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (e.key === "Tab" && document.activeElement?.getAttribute("data-search-input") !== null && !query) {
+        e.preventDefault();
+        setMode((m) => (m === "text" ? "rag" : "text"));
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [query]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -30,6 +46,8 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
       <div className="relative flex-1 search-glow rounded-xl transition-all duration-300">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
+          ref={inputRef}
+          data-search-input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={

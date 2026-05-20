@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SpaceBackground } from "@/components/space-background";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain, Network, Sparkles, RefreshCw } from "lucide-react";
+import { Brain, Network, RefreshCw } from "lucide-react";
 
 const allNotes = loadNotes();
 const categories = getCategories();
@@ -253,15 +253,48 @@ export default function Home() {
                   )}
 
                   {!isLoading && !ragAnswer && searchResults.length === 0 && (
-                    <div className="text-center py-24">
-                      <div className="relative inline-block">
-                        <Sparkles className="h-16 w-16 text-indigo-500/20 mx-auto mb-4" />
-                        <div className="absolute inset-0 blur-2xl bg-indigo-500/10" />
+                    <div className="text-center py-16">
+                      <div className="relative inline-block mb-6">
+                        <div className="relative">
+                          <Brain className="h-20 w-20 text-primary/15 mx-auto" />
+                          <div className="absolute inset-0 blur-3xl bg-primary/10" />
+                        </div>
+                        <div className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-primary/20 animate-pulse" />
+                        <div className="absolute top-4 -left-4 h-2.5 w-2.5 rounded-full bg-cyan-400/20 animate-pulse delay-700" />
+                        <div className="absolute -bottom-1 right-6 h-3 w-3 rounded-full bg-purple-400/20 animate-pulse delay-1000" />
                       </div>
-                      <p className="text-lg font-medium text-indigo-300/40">Nessun risultato</p>
-                      <p className="text-sm mt-2 text-indigo-300/25 max-w-sm mx-auto">
-                        Usa la barra di ricerca per esplorare le tue note, oppure passa alla modalit&agrave; AI per una risposta generata
+                      <h2 className="text-xl font-semibold text-foreground/60 mb-2">
+                        Esplora il tuo universo di note
+                      </h2>
+                      <p className="text-sm text-muted-foreground/50 max-w-md mx-auto mb-8">
+                        Cerca tra le tue note, chiedi all&apos;AI, o naviga il grafo per scoprire collegamenti nascosti
                       </p>
+                      <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
+                        <div className="glass-card rounded-xl p-4 text-center">
+                          <p className="text-2xl font-bold text-primary/50">{allNotes.length}</p>
+                          <p className="text-xs text-muted-foreground/50 mt-1">Note</p>
+                        </div>
+                        <div className="glass-card rounded-xl p-4 text-center">
+                          <p className="text-2xl font-bold text-primary/50">{categories.length}</p>
+                          <p className="text-xs text-muted-foreground/50 mt-1">Categorie</p>
+                        </div>
+                        <div className="glass-card rounded-xl p-4 text-center">
+                          <p className="text-2xl font-bold text-primary/50">
+                            {allNotes.reduce((sum, n) => sum + n.links.length, 0)}
+                          </p>
+                          <p className="text-xs text-muted-foreground/50 mt-1">Collegamenti</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center gap-6 mt-8 text-xs text-muted-foreground/30">
+                        <span className="flex items-center gap-1.5">
+                          <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">/</kbd>
+                          Apri ricerca
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">Tab</kbd>
+                          nella ricerca: cambia modalit&agrave;
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
