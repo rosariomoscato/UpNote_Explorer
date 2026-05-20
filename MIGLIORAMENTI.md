@@ -7,7 +7,7 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 ## Grafica / UI
 
 - [x] **Animazioni transizione** — fade-in/slide delle note nel grafo e nei risultati di ricerca (framer-motion)
-- [ ] **Grafo interattivo migliorato** — hover preview delle note (tooltip con abstract), raggruppamento visivo per categoria con cluster
+- [x] **Grafo interattivo migliorato** — hover preview delle note (tooltip con abstract), raggruppamento visivo per categoria con cluster
 - [ ] **Layout note nel grafo** — mini-preview del contenuto dentro i nodi invece del solo titolo
 - [ ] **Tema animato** — particelle spaziali o stelle nel background (potenziare `space-background.tsx`)
 - [ ] **Empty state** — schermata iniziale più accattivante quando non c'è ricerca attiva

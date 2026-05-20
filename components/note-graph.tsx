@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
 import { Note, CATEGORY_COLORS } from "@/lib/types";
 
 interface NoteGraphProps {
@@ -32,13 +33,19 @@ interface VisEdge {
 export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<unknown>(null);
+  const { resolvedTheme } = useTheme();
+  const [tooltip, setTooltip] = useState<{
+    note: Note;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const isDark = resolvedTheme === "dark";
 
   const buildGraph = useCallback(() => {
     if (!containerRef.current) return;
 
-    const catFolderIds = new Map<string, string>();
     const categories = [...new Set(notes.map((n) => n.category))];
-    categories.forEach((cat) => catFolderIds.set(cat, `folder_${cat}`));
 
     const colorMap: Record<string, { bg: string; border: string }> = {};
     for (const [cat, color] of Object.entries(CATEGORY_COLORS)) {
@@ -75,7 +82,7 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
           highlight: { background: c.bg, border: "#fff" },
           hover: { background: c.bg, border: "#fff" },
         },
-        font: { size: 13, color: "#e0e0e0" },
+        font: { size: 13, color: isDark ? "#e0e0e0" : "#1a1a2e" },
         size: 22,
         shape: "dot",
         borderWidth: 2,
@@ -94,7 +101,7 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
           highlight: { background: c.bg, border: "#fff" },
           hover: { background: c.bg, border: "#fff" },
         },
-        font: { size: 11, color: "#ccc" },
+        font: { size: 11, color: isDark ? "#ccc" : "#2d2d3f" },
         size: 12,
         shape: "dot",
         borderWidth: 1,
@@ -117,6 +124,7 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
     }
 
     const noteIdSet = new Set(notes.map((n) => n.id));
+    const noteMap = new Map(notes.map((n) => [n.id, n]));
     const addedLinks = new Set<string>();
     for (const note of notes) {
       for (const linkTitle of note.links) {
@@ -135,14 +143,13 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
               dashes: true,
               color: { color: "#fbbf24", highlight: "#fbbf24", hover: "#fbbf24" },
               width: 1,
-              title: `${note.title} ↔ ${target.title}`,
             });
           }
         }
       }
     }
 
-    import("vis-network").then(({ Network } ) => {
+    import("vis-network").then(({ Network }) => {
       if (networkRef.current) {
         (networkRef.current as { destroy: () => void }).destroy();
       }
@@ -150,18 +157,25 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
       const options = {
         physics: {
           barnesHut: {
-            gravitationalConstant: -5000,
-            centralGravity: 0.15,
-            springLength: 100,
-            springConstant: 0.03,
+            gravitationalConstant: -8000,
+            centralGravity: 0.3,
+            springLength: 60,
+            springConstant: 0.04,
           },
-          stabilization: { iterations: 150 },
+          stabilization: { iterations: 200 },
         },
         interaction: {
           hover: true,
-          tooltipDelay: 150,
+          tooltipDelay: 200,
           navigationButtons: true,
           keyboard: true,
+        },
+        nodes: {
+          shadow: {
+            enabled: true,
+            color: "rgba(0,0,0,0.3)",
+            size: 5,
+          },
         },
         edges: {
           smooth: { enabled: true, type: "continuous", roundness: 0.5 } as const,
@@ -175,6 +189,26 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
         options
       );
 
+      network.on("hoverNode", (params: { node: string }) => {
+        const note = noteMap.get(params.node);
+        if (note) {
+          const canvasRect = containerRef.current?.getBoundingClientRect();
+          const pos = network.getPositions([params.node])[params.node];
+          if (canvasRect && pos) {
+            const canvasPoint = network.canvasToDOM({ x: pos.x, y: pos.y });
+            setTooltip({
+              note,
+              x: canvasPoint.x,
+              y: canvasPoint.y,
+            });
+          }
+        }
+      });
+
+      network.on("blurNode", () => {
+        setTooltip(null);
+      });
+
       network.on("click", (params: { nodes: string[] }) => {
         if (params.nodes.length === 1) {
           const nodeId = params.nodes[0];
@@ -186,7 +220,7 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
 
       networkRef.current = network;
     });
-  }, [notes, onNodeClick]);
+  }, [notes, onNodeClick, isDark]);
 
   useEffect(() => {
     buildGraph();
@@ -206,8 +240,45 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
     >
       <div
         ref={containerRef}
-        className="h-full w-full rounded-lg border border-border/50 bg-background/50"
-      />
+        className="h-full w-full rounded-lg border border-border/50 bg-background/50 relative"
+      >
+        {tooltip && (
+          <div
+            className="absolute z-50 pointer-events-none"
+            style={{
+              left: tooltip.x,
+              top: tooltip.y - 20,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            <div className="rounded-xl p-3 max-w-[300px] shadow-xl border border-border/50 bg-popover/95 backdrop-blur-xl">
+              <p className="font-semibold text-sm text-foreground mb-1.5">
+                {tooltip.note.title}
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                {tooltip.note.content.slice(0, 150).replace(/\n/g, " ")}...
+              </p>
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full border"
+                  style={{
+                    borderColor: `${tooltip.note.categoryColor}50`,
+                    color: tooltip.note.categoryColor,
+                    backgroundColor: `${tooltip.note.categoryColor}10`,
+                  }}
+                >
+                  #{tooltip.note.category.replace(/_/g, " ")}
+                </span>
+                {tooltip.note.links.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {tooltip.note.links.length} link
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }

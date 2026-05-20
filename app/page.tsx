@@ -219,7 +219,7 @@ export default function Home() {
             </div>
 
             <TabsContent value="graph" className="flex-1 min-h-0 mt-0 px-6 pb-6">
-              <div className="h-full rounded-xl overflow-hidden border border-indigo-500/10">
+              <div className="h-full rounded-xl border border-indigo-500/10">
                 <NoteGraph notes={filteredNotes} onNodeClick={handleNoteClick} />
               </div>
             </TabsContent>
