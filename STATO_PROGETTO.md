@@ -1,6 +1,6 @@
 # Stato del Progetto — UpNote Knowledge Explorer
 
-Ultimo aggiornamento: 2026-05-19
+Ultimo aggiornamento: 2026-05-20
 
 ## Cos'è
 
@@ -9,6 +9,7 @@ Web app Next.js che visualizza note UpNote come grafo interattivo, con ricerca f
 ## Stack
 
 - Next.js 16, ShadCN UI, Tailwind CSS v4, vis-network, fuse.js, Vercel AI SDK
+- framer-motion (animazioni), marked (markdown rendering)
 - LLM: OpenRouter (`nvidia/nemotron-3-super-120b-a12b:free`) via `.env.local`
 - GitHub: `https://github.com/rosariomoscato/UpNote_Explorer`
 - Git author: `Rosario Moscato <ros.moscato@gmail.com>`
@@ -24,21 +25,21 @@ upnote-explorer/
 │   └── search-engine.ts      ← fuse.js doppio (text search + RAG)
 ├── app/
 │   ├── page.tsx              ← pagina principale con tutti gli stati UI
-│   ├── layout.tsx            ← ThemeProvider + TooltipProvider
-│   ├── globals.css           ← tema futuro, glass-morphism, glow
+│   ├── layout.tsx            ← ThemeProvider + TooltipProvider + removeChild fix
+│   ├── globals.css           ← tema futuro, glass-morphism, glow, markdown styles
 │   └── api/
 │       ├── ask/route.ts      ← RAG endpoint (openrouter/ollama/openai)
 │       ├── search/route.ts   ← fuse.js search
 │       └── rebuild/route.ts  ← re-index + reload
 ├── components/
-│   ├── note-graph.tsx        ← vis-network grafo
-│   ├── note-sheet.tsx        ← Sheet laterale con contenuto + allegati + link
-│   ├── search-bar.tsx        ← barra ricerca + selettore modalità
-│   ├── search-results.tsx    ← lista risultati
+│   ├── note-graph.tsx        ← vis-network grafo con tooltip hover + mini-preview card
+│   ├── note-sheet.tsx        ← Panel laterale custom (framer-motion) con markdown + allegati + link
+│   ├── search-bar.tsx        ← barra ricerca + selettore modalità + keyboard shortcuts
+│   ├── search-results.tsx    ← lista risultati con fade-in animato
 │   ├── rag-answer.tsx        ← risposta AI con citazioni
 │   ├── sidebar-nav.tsx       ← sidebar categorie
 │   ├── theme-toggle.tsx      ← dark/light toggle
-│   └── space-background.tsx  ← background spaziale
+│   └── space-background.tsx  ← background spaziale animato (stelle, nebulose, stelle cadenti)
 ├── data/notes.json           ← generato dal build (gitignorato)
 ├── public/files/             ← allegati copiati dal build (gitignorato)
 ├── MIGLIORAMENTI.md          ← lista miglioramenti da implementare
@@ -64,6 +65,21 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 6. Salva `data/notes.json` e copia file in `public/files/`
 7. Flag `--cleanup` per eliminare export vecchi
 
+## Miglioramenti implementati (2026-05-20)
+
+### Grafica / UI
+
+- **Animazioni transizione** — fade-in/slide con framer-motion su risultati ricerca, grafo e note sheet
+- **Grafo interattivo migliorato** — tooltip React custom on hover con preview nota (titolo, abstract, categoria, link). Font color adattivo al tema (dark/light)
+- **Layout note nel grafo** — nodi nota come mini-card box arrotondate con titolo + preview contenuto (80 char), bordo colorato per categoria
+- **Tema animato** — background spaziale con stelle a 3 strati (parallax), nebulose animate, particelle fluttuanti, stelle cadenti. Colori adattivi dark/light
+- **Empty state** — schermata iniziale con icona Brain animata, stat card (note/categorie/collegamenti), keyboard shortcuts hint
+- **Markdown rendering** — note renderizzate con markdown reale (headers, liste, link, code, blockquote, tabelle) via `marked`. Link blu, apribili in nuova scheda. Fix escape underscore nei URL
+
+### Funzionalità
+
+- **Keyboard shortcuts** — `/` per focus sulla ricerca, `Tab` (nell'input vuoto) per cambiare modalità testo/AI
+
 ## Decisioni prese
 
 - `generateText` (non `streamText`) per RAG — streaming vuoto con OpenRouter
@@ -71,11 +87,15 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - Merge da TUTTE le cartelle export (non solo l'ultima) per non perdere note
 - Note caricate via JSON import statico (non `fs`) — funziona client e server
 - Lingua italiana per UI e risposte AI
+- NoteSheet custom con framer-motion invece del componente Sheet base-ui (bug removeChild)
+- `marked` per markdown rendering (non react-markdown — conflitto DOM con base-ui)
+- Patch `Node.prototype.removeChild` in `layout.tsx` per suppressione errore DOM noto di React 19 + base-ui
 
 ## Avvertenze tecniche
 
 - ShadCN usa `@base-ui/react` (non Radix) — niente `asChild` su TooltipTrigger
 - vis-network `smooth` richiede `{ enabled: true, type: "continuous", roundness: 0.5 }`
+- Bug noto: `removeChild` DOM error alla chiusura di componenti base-ui — gestito con patch in `layout.tsx`
 - Per push su GitHub serve impostare remote con PAT, poi ripulire:
   ```bash
   git remote set-url origin https://rosariomoscato:<PAT>@github.com/rosariomoscato/UpNote_Explorer.git
@@ -85,4 +105,4 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 ## Prossimi passi
 
-Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare.
+Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti nella sezione Grafica/UI: nessuno. Prossimi: Funzionalità (filtro per categoria, breadcrumb, note correlate, statistiche, export, highlight, cronologia ricerche), Generalizzazione, AI/RAG.
