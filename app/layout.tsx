@@ -26,6 +26,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var o=Node.prototype.removeChild;Node.prototype.removeChild=function(c){try{return o.call(this,c)}catch(e){if(e instanceof DOMException&&e.name==='NotFoundError')return c;throw e}}})()`,
+          }}
+        />
+      </head>
       <body className="h-full">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <TooltipProvider>

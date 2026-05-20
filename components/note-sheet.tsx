@@ -1,17 +1,11 @@
 "use client";
 
+import { useMemo, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Note } from "@/lib/types";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Image, Paperclip } from "lucide-react";
+import { marked } from "marked";
+import { FileText, Image, Paperclip, X } from "lucide-react";
 
 interface NoteSheetProps {
   note: Note | null;
@@ -27,90 +21,132 @@ function getFileIcon(filename: string) {
   return <FileText className="h-3.5 w-3.5" />;
 }
 
-export function NoteSheet({ note, open, onOpenChange }: NoteSheetProps) {
+function NoteContent({ content }: { content: string }) {
+  const html = useMemo(() => {
+    const cleaned = content.replace(/\\_/g, "_");
+    const renderer = new marked.Renderer();
+    renderer.link = function ({ href, text }) {
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    };
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      renderer,
+    });
+    return marked.parse(cleaned) as string;
+  }, [content]);
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[480px] sm:max-w-[480px] bg-[#0a0e1f]/95 backdrop-blur-xl border-indigo-500/15">
-        <AnimatePresence mode="wait">
-          {note && (
-            <motion.div
-              key={note.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-            >
-              <SheetHeader>
-          <span
-            className="w-fit text-xs px-2.5 py-1 rounded-full border mb-2"
-            style={{
-              borderColor: `${note.categoryColor}40`,
-              color: note.categoryColor,
-              backgroundColor: `${note.categoryColor}10`,
-            }}
+    <div
+      className="note-content text-sm leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+export function NoteSheet({ note, open, onOpenChange }: NoteSheetProps) {
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  return (
+    <>
+      {open && note && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm"
+            onClick={() => onOpenChange(false)}
+          />
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            className="fixed inset-y-0 right-0 z-50 w-[480px] sm:max-w-[480px] bg-[#0a0e1f]/95 backdrop-blur-xl border-l border-indigo-500/15 shadow-2xl flex flex-col"
           >
-            #{note.category.replace(/_/g, " ")}
-          </span>
-          <SheetTitle className="text-left text-foreground">{note.title}</SheetTitle>
-          <SheetDescription className="text-left text-muted-foreground">
-            {note.date && `Data: ${note.date}`}
-          </SheetDescription>
-        </SheetHeader>
-        <Separator className="my-4 opacity-20" />
-        <ScrollArea className="h-[calc(100vh-200px)]">
-          <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap pr-4">
-            {note.content}
-          </div>
-
-          {note.attachments.length > 0 && (
-            <>
-              <Separator className="my-4 opacity-20" />
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground/50 flex items-center gap-1.5">
-                  <Paperclip className="h-3.5 w-3.5" />
-                  Allegati ({note.attachments.length})
-                </p>
-                <div className="space-y-1">
-                  {note.attachments.map((file, i) => (
-                    <a
-                      key={i}
-                      href={`/files/${encodeURIComponent(file)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-primary/10 text-primary/70 border border-primary/10 hover:bg-primary/15 hover:text-primary transition-colors"
-                    >
-                      {getFileIcon(file)}
-                      <span className="truncate">{file}</span>
-                    </a>
-                  ))}
-                </div>
+            <div className="flex items-center justify-between p-4 border-b border-border/10">
+              <div className="flex flex-col gap-1">
+                <span
+                  className="w-fit text-xs px-2.5 py-1 rounded-full border"
+                  style={{
+                    borderColor: `${note.categoryColor}40`,
+                    color: note.categoryColor,
+                    backgroundColor: `${note.categoryColor}10`,
+                  }}
+                >
+                  #{note.category.replace(/_/g, " ")}
+                </span>
+                <h2 className="text-base font-medium text-foreground">{note.title}</h2>
+                {note.date && (
+                  <p className="text-xs text-muted-foreground">Data: {note.date}</p>
+                )}
               </div>
-            </>
-          )}
+              <button
+                onClick={() => onOpenChange(false)}
+                className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-          {note.links.length > 0 && (
-            <>
-              <Separator className="my-4 opacity-20" />
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground/30">Collegamenti</p>
-                <div className="flex flex-wrap gap-2">
-                  {note.links.map((link, i) => (
-                    <span
-                      key={i}
-                      className="text-xs px-2.5 py-1 rounded-md bg-muted text-muted-foreground border"
-                    >
-                      {link}
-                    </span>
-                  ))}
-                </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="p-4">
+                <NoteContent content={note.content} />
+
+                {note.attachments.length > 0 && (
+                  <>
+                    <Separator className="my-4 opacity-20" />
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground/50 flex items-center gap-1.5">
+                        <Paperclip className="h-3.5 w-3.5" />
+                        Allegati ({note.attachments.length})
+                      </p>
+                      <div className="space-y-1">
+                        {note.attachments.map((file, i) => (
+                          <a
+                            key={i}
+                            href={`/files/${encodeURIComponent(file)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-primary/10 text-primary/70 border border-primary/10 hover:bg-primary/15 hover:text-primary transition-colors"
+                          >
+                            {getFileIcon(file)}
+                            <span className="truncate">{file}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {note.links.length > 0 && (
+                  <>
+                    <Separator className="my-4 opacity-20" />
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground/30">Collegamenti</p>
+                      <div className="flex flex-wrap gap-2">
+                        {note.links.map((link, i) => (
+                          <span
+                            key={i}
+                            className="text-xs px-2.5 py-1 rounded-md bg-muted text-muted-foreground border"
+                          >
+                            {link}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-            </>
-          )}
-        </ScrollArea>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </SheetContent>
-    </Sheet>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </>
   );
 }

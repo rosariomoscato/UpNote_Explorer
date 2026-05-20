@@ -11,7 +11,7 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 - [x] **Layout note nel grafo** — mini-preview del contenuto dentro i nodi invece del solo titolo
 - [x] **Tema animato** — particelle spaziali o stelle nel background (potenziare `space-background.tsx`)
 - [x] **Empty state** — schermata iniziale più accattivante quando non c'è ricerca attiva
-- [ ] **Markdown rendering** — renderizzare markdown reale nel NoteSheet invece di testo piano
+- [x] **Markdown rendering** — renderizzare markdown reale nel NoteSheet invece di testo piano
 
 ## Funzionalità
 
