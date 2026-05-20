@@ -136,7 +136,7 @@
 }
 
 body {
-  background: linear-gradient(135deg, #f0f0ff 0%, #e8e4ff 25%, #ddd6fe 50%, #e8e4ff 75%, #f0f0ff 100%);
+  background: linear-gradient(135deg, rgba(240,240,255,0.85) 0%, rgba(232,228,255,0.85) 25%, rgba(221,214,254,0.85) 50%, rgba(232,228,255,0.85) 75%, rgba(240,240,255,0.85) 100%);
   background-attachment: fixed;
   min-height: 100vh;
 }
