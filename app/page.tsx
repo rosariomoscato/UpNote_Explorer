@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SpaceBackground } from "@/components/space-background";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain, Network, RefreshCw } from "lucide-react";
+import { Brain, Network, RefreshCw, X } from "lucide-react";
 
 const allNotes = loadNotes();
 const categories = getCategories();
@@ -59,6 +59,13 @@ export default function Home() {
       setSelectedNote(note);
       setSheetOpen(true);
     }
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchResults([]);
+    setRagAnswer("");
+    setRagSources([]);
+    setLastQuery("");
   }, []);
 
   const handleSearch = useCallback(
@@ -227,6 +234,18 @@ export default function Home() {
             <TabsContent value="results" className="flex-1 min-h-0 mt-0">
               <ScrollArea className="h-full">
                 <div className="px-6 py-4 max-w-3xl mx-auto space-y-6">
+                  {(searchResults.length > 0 || ragAnswer) && !isLoading && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleClearSearch}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-accent transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Cancella risultati
+                      </button>
+                    </div>
+                  )}
+
                   {isLoading && !isStreaming && (
                     <div className="space-y-4">
                       <div className="h-8 w-48 rounded-lg bg-indigo-500/10 animate-pulse" />
