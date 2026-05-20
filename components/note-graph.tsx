@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Note, CATEGORY_COLORS } from "@/lib/types";
 
 interface NoteGraphProps {
@@ -197,9 +198,16 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
   }, [buildGraph]);
 
   return (
-    <div
-      ref={containerRef}
-      className="h-full w-full rounded-lg border border-border/50 bg-background/50"
-    />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="h-full w-full"
+    >
+      <div
+        ref={containerRef}
+        className="h-full w-full rounded-lg border border-border/50 bg-background/50"
+      />
+    </motion.div>
   );
 }

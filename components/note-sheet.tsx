@@ -1,6 +1,7 @@
 "use client";
 
 import { Note } from "@/lib/types";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sheet,
   SheetContent,
@@ -27,12 +28,19 @@ function getFileIcon(filename: string) {
 }
 
 export function NoteSheet({ note, open, onOpenChange }: NoteSheetProps) {
-  if (!note) return null;
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-[480px] sm:max-w-[480px] bg-[#0a0e1f]/95 backdrop-blur-xl border-indigo-500/15">
-        <SheetHeader>
+        <AnimatePresence mode="wait">
+          {note && (
+            <motion.div
+              key={note.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+            >
+              <SheetHeader>
           <span
             className="w-fit text-xs px-2.5 py-1 rounded-full border mb-2"
             style={{
@@ -99,6 +107,9 @@ export function NoteSheet({ note, open, onOpenChange }: NoteSheetProps) {
             </>
           )}
         </ScrollArea>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </SheetContent>
     </Sheet>
   );

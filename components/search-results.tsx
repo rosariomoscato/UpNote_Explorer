@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { SearchResult } from "@/lib/types";
 import { FileText } from "lucide-react";
 
@@ -13,7 +14,13 @@ export function SearchResults({ results, query, onNoteClick }: SearchResultsProp
   if (results.length === 0) return null;
 
   return (
-    <div className="space-y-4">
+    <motion.div
+      key={query}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-4"
+    >
       <p className="text-sm text-muted-foreground">
         Trovati <strong className="text-foreground">{results.length}</strong> risultati per &quot;{query}&quot;
       </p>
@@ -60,7 +67,7 @@ export function SearchResults({ results, query, onNoteClick }: SearchResultsProp
           )}
         </div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
