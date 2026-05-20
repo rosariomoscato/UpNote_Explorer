@@ -15,10 +15,15 @@ interface VisNode {
   label: string;
   group: string;
   color: { background: string; border: string; highlight: { background: string; border: string }; hover: { background: string; border: string } };
-  font: { size: number; color: string };
+  font: { size: number; color: string; align?: string; multi?: boolean };
   size: number;
   shape: string;
   borderWidth: number;
+  widthConstraint?: { maximum: number };
+  heightConstraint?: { valign?: string };
+  margin?: { top: number; bottom: number; left: number; right: number };
+  shadow?: { enabled: boolean; color: string; size: number };
+  shapeProperties?: { borderRadius: number };
 }
 
 interface VisEdge {
@@ -91,20 +96,27 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
 
     for (const note of notes) {
       const c = colorMap[note.category] || { bg: "#95a5a6", border: "#95a5a6" };
+      const preview = note.content.slice(0, 80).replace(/\n/g, " ");
+      const bgColor = isDark ? "#111827" : "#f8fafc";
+      const borderColor = c.bg;
       visNodes.push({
         id: note.id,
-        label: note.title.length > 30 ? note.title.slice(0, 27) + "..." : note.title,
+        label: `${note.title}\n─────────────\n${preview}...`,
         group: note.category,
         color: {
-          background: c.bg,
-          border: c.border,
-          highlight: { background: c.bg, border: "#fff" },
-          hover: { background: c.bg, border: "#fff" },
+          background: bgColor,
+          border: borderColor,
+          highlight: { background: bgColor, border: "#fff" },
+          hover: { background: isDark ? "#1e293b" : "#e2e8f0", border: "#fff" },
         },
-        font: { size: 11, color: isDark ? "#ccc" : "#2d2d3f" },
+        font: { size: 10, color: isDark ? "#ccc" : "#2d2d3f", align: "left", multi: true },
         size: 12,
-        shape: "dot",
-        borderWidth: 1,
+        shape: "box",
+        borderWidth: 2,
+        widthConstraint: { maximum: 180 },
+        margin: { top: 8, bottom: 8, left: 10, right: 10 },
+        shadow: { enabled: true, color: `${c.bg}40`, size: 8 },
+        shapeProperties: { borderRadius: 20 },
       });
     }
 
@@ -119,7 +131,7 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
         from: `folder_${note.category}`,
         to: note.id,
         width: 0.5,
-        color: { color: "#333", highlight: "#fff", hover: "#666" },
+        color: { color: isDark ? "#333" : "#ccc", highlight: "#fff", hover: "#888" },
       });
     }
 
@@ -157,12 +169,12 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
       const options = {
         physics: {
           barnesHut: {
-            gravitationalConstant: -8000,
-            centralGravity: 0.3,
-            springLength: 60,
-            springConstant: 0.04,
+            gravitationalConstant: -12000,
+            centralGravity: 0.2,
+            springLength: 80,
+            springConstant: 0.03,
           },
-          stabilization: { iterations: 200 },
+          stabilization: { iterations: 250 },
         },
         interaction: {
           hover: true,
@@ -256,7 +268,7 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
                 {tooltip.note.title}
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                {tooltip.note.content.slice(0, 150).replace(/\n/g, " ")}...
+                {tooltip.note.content.slice(0, 250).replace(/\n/g, " ")}...
               </p>
               <div className="flex items-center gap-2">
                 <span
