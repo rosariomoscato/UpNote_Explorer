@@ -1,11 +1,65 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Note } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { marked } from "marked";
-import { FileText, Image, Paperclip, X, ChevronRight, Link2 } from "lucide-react";
+import { FileText, Image, Paperclip, X, ChevronRight, Link2, Download, FileDown, FileType } from "lucide-react";
+
+function exportAsMarkdown(note: Note) {
+  const meta = [`# ${note.title}`, "", `**Categoria:** ${note.category.replace(/_/g, " ")}`];
+  if (note.date) meta.push(`**Data:** ${note.date}`);
+  meta.push("", "---", "");
+  const full = meta.join("\n") + note.content;
+  const blob = new Blob([full], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${note.title.replace(/[/\\?%*:|"<>]/g, "-")}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportAsPdf(note: Note) {
+  const htmlContent = marked.parse(note.content.replace(/\\_/g, "_")) as string;
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${note.title}</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#1a1a2e;line-height:1.7}
+  h1{font-size:1.6em;border-bottom:2px solid #6366f1;padding-bottom:8px;margin-bottom:4px}
+  .meta{font-size:0.85em;color:#6b7280;margin-bottom:24px}
+  .meta span{margin-right:16px}
+  h2{font-size:1.3em;color:#4338ca;margin-top:28px}
+  h3{font-size:1.1em;color:#6366f1}
+  a{color:#6366f1;text-decoration:none}
+  code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.9em}
+  pre{background:#f1f5f9;padding:16px;border-radius:8px;overflow-x:auto}
+  pre code{background:none;padding:0}
+  blockquote{border-left:3px solid #6366f1;padding-left:16px;color:#6b7280;margin-left:0}
+  table{border-collapse:collapse;width:100%;margin:16px 0}
+  th,td{border:1px solid #e2e8f0;padding:8px 12px;text-align:left}
+  th{background:#f8fafc}
+  img{max-width:100%;border-radius:8px}
+  ul,ol{padding-left:24px}
+  @media print{body{margin:0;max-width:100%}}
+</style></head><body>
+<h1>${note.title}</h1>
+<div class="meta">
+  <span>📂 ${note.category.replace(/_/g, " ")}</span>
+  ${note.date ? `<span>📅 ${note.date}</span>` : ""}
+</div>
+${htmlContent}
+</body></html>`;
+  const win = window.open("", "_blank");
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+    win.onload = () => { win.print(); };
+  }
+}
 
 interface NoteSheetProps {
   note: Note | null;
@@ -65,6 +119,56 @@ function NoteContent({ content, onLinkClick }: { content: string; onLinkClick: (
   );
 }
 
+function ExportMenu({ note }: { note: Note }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+        title="Esporta nota"
+      >
+        <Download className="h-4 w-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-10 w-52 rounded-xl border border-border/40 bg-popover/95 backdrop-blur-xl shadow-xl py-1 animate-in fade-in-0 zoom-in-95">
+          <button
+            onClick={() => { exportAsMarkdown(note); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+          >
+            <FileType className="h-4 w-4 text-indigo-400" />
+            <div className="text-left">
+              <div className="font-medium">Markdown</div>
+              <div className="text-[11px] text-muted-foreground">.md</div>
+            </div>
+          </button>
+          <button
+            onClick={() => { exportAsPdf(note); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+          >
+            <FileDown className="h-4 w-4 text-rose-400" />
+            <div className="text-left">
+              <div className="font-medium">PDF</div>
+              <div className="text-[11px] text-muted-foreground">Stampa / Salva come PDF</div>
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbClick, onLinkClick, relatedNotes }: NoteSheetProps) {
   useEffect(() => {
     if (open) {
@@ -107,12 +211,15 @@ export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbC
                   <p className="text-xs text-muted-foreground">Data: {note.date}</p>
                 )}
               </div>
-              <button
-                onClick={() => onOpenChange(false)}
-                className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <ExportMenu note={note} />
+                <button
+                  onClick={() => onOpenChange(false)}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {noteHistory.length > 1 && (
