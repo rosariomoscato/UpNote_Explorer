@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { SearchResult } from "@/lib/types";
 import { FileText } from "lucide-react";
@@ -12,6 +13,14 @@ interface SearchResultsProps {
 }
 
 export function SearchResults({ results, query, onNoteClick, focusedIndex = -1 }: SearchResultsProps) {
+  const refs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  useEffect(() => {
+    if (focusedIndex >= 0) {
+      refs.current.get(focusedIndex)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [focusedIndex]);
+
   if (results.length === 0) return null;
 
   return (
@@ -28,6 +37,7 @@ export function SearchResults({ results, query, onNoteClick, focusedIndex = -1 }
       {results.map((result, idx) => (
         <div
           key={result.item.id}
+          ref={(el) => { if (el) refs.current.set(idx, el); }}
           className={`glass-card rounded-xl p-5 cursor-pointer group transition-all duration-200 ${
             idx === focusedIndex ? "ring-2 ring-primary/50 bg-primary/10" : ""
           }`}
