@@ -36,6 +36,18 @@ export default function Home() {
     ? allNotes.filter((n) => n.category === selectedCategory)
     : allNotes;
 
+  const filteredSearchResults = selectedCategory
+    ? searchResults.filter((r) => r.item.category === selectedCategory)
+    : searchResults;
+
+  const filteredRagSources = selectedCategory
+    ? ragSources.filter((n) => n.category === selectedCategory)
+    : ragSources;
+
+  const activeCategoryColor = selectedCategory
+    ? categories.find((c) => c.name === selectedCategory)?.color
+    : null;
+
   const currentNotes = notesVersion >= 0 ? filteredNotes : filteredNotes;
 
   const handleRebuild = useCallback(async () => {
@@ -78,7 +90,8 @@ export default function Home() {
         setRagAnswer("");
         setRagSources([]);
         try {
-          const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+          const catParam = selectedCategory ? `&category=${encodeURIComponent(selectedCategory)}` : "";
+          const res = await fetch(`/api/search?q=${encodeURIComponent(query)}${catParam}`);
           const data = await res.json();
           setSearchResults(data.results || []);
         } catch {
@@ -96,7 +109,7 @@ export default function Home() {
           const res = await fetch("/api/ask", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: query }),
+            body: JSON.stringify({ question: query, category: selectedCategory }),
           });
 
           if (!res.ok) {
@@ -157,7 +170,7 @@ export default function Home() {
         setIsLoading(false);
       }
     },
-    []
+    [selectedCategory]
   );
 
   return (
@@ -218,11 +231,29 @@ export default function Home() {
                   className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-200"
                 >
                   Risultati
-                  {(searchResults.length > 0 || ragAnswer) && (
+                  {(filteredSearchResults.length > 0 || ragAnswer) && (
                     <span className="ml-1 h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
                   )}
                 </TabsTrigger>
               </TabsList>
+
+              {selectedCategory && activeCategoryColor && (
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="text-xs text-muted-foreground/60">Filtro:</span>
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all duration-200 hover:opacity-80"
+                    style={{
+                      borderColor: `${activeCategoryColor}50`,
+                      color: activeCategoryColor,
+                      backgroundColor: `${activeCategoryColor}10`,
+                    }}
+                  >
+                    {selectedCategory.replace(/_/g, " ")}
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <TabsContent value="graph" className="flex-1 min-h-0 mt-0 px-6 pb-6">
@@ -234,7 +265,7 @@ export default function Home() {
             <TabsContent value="results" className="flex-1 min-h-0 mt-0">
               <ScrollArea className="h-full">
                 <div className="px-6 py-4 max-w-3xl mx-auto space-y-6">
-                  {(searchResults.length > 0 || ragAnswer) && !isLoading && (
+                  {(filteredSearchResults.length > 0 || ragAnswer) && !isLoading && (
                     <div className="flex justify-end">
                       <button
                         onClick={handleClearSearch}
@@ -257,21 +288,21 @@ export default function Home() {
                   {ragAnswer && (
                     <RagAnswer
                       answer={ragAnswer}
-                      sources={ragSources}
+                      sources={filteredRagSources}
                       isStreaming={isStreaming}
                       onSourceClick={handleNoteClick}
                     />
                   )}
 
-                  {searchResults.length > 0 && (
+                  {filteredSearchResults.length > 0 && (
                     <SearchResults
-                      results={searchResults}
+                      results={filteredSearchResults}
                       query={lastQuery}
                       onNoteClick={handleNoteClick}
                     />
                   )}
 
-                  {!isLoading && !ragAnswer && searchResults.length === 0 && (
+                  {!isLoading && !ragAnswer && filteredSearchResults.length === 0 && (
                     <div className="text-center py-16">
                       <div className="relative inline-block mb-6">
                         <div className="relative">
@@ -290,16 +321,16 @@ export default function Home() {
                       </p>
                       <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
                         <div className="glass-card rounded-xl p-4 text-center">
-                          <p className="text-2xl font-bold text-primary/50">{allNotes.length}</p>
+                          <p className="text-2xl font-bold text-primary/50">{filteredNotes.length}</p>
                           <p className="text-xs text-muted-foreground/50 mt-1">Note</p>
                         </div>
                         <div className="glass-card rounded-xl p-4 text-center">
-                          <p className="text-2xl font-bold text-primary/50">{categories.length}</p>
+                          <p className="text-2xl font-bold text-primary/50">{selectedCategory ? 1 : categories.length}</p>
                           <p className="text-xs text-muted-foreground/50 mt-1">Categorie</p>
                         </div>
                         <div className="glass-card rounded-xl p-4 text-center">
                           <p className="text-2xl font-bold text-primary/50">
-                            {allNotes.reduce((sum, n) => sum + n.links.length, 0)}
+                            {filteredNotes.reduce((sum, n) => sum + n.links.length, 0)}
                           </p>
                           <p className="text-xs text-muted-foreground/50 mt-1">Collegamenti</p>
                         </div>

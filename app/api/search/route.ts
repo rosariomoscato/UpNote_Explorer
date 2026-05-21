@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  const results = searchNotes(query.trim());
+  const category = request.nextUrl.searchParams.get("category");
+  const results = searchNotes(query.trim(), 10, category || undefined);
   return NextResponse.json({ results });
 }

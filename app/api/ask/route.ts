@@ -12,7 +12,7 @@ Regole:
 5. Usa un tono informativo ma accessibile`;
 
 export async function POST(request: NextRequest) {
-  const { question } = await request.json();
+  const { question, category } = await request.json();
 
   if (!question || typeof question !== "string") {
     return new Response(JSON.stringify({ error: "Question is required" }), {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const relevantNotes: Note[] = getRelevantNotes(question, 8);
+  const relevantNotes: Note[] = getRelevantNotes(question, 8, category);
 
   if (relevantNotes.length === 0) {
     return new Response(

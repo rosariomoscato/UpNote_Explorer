@@ -39,10 +39,14 @@ function getFuseRag(): Fuse<Note> {
   return fuseRagCache.instance;
 }
 
-export function searchNotes(query: string, limit = 10): SearchResult[] {
+export function searchNotes(query: string, limit = 10, category?: string): SearchResult[] {
   if (!query || query.trim().length < 2) return [];
   const fuse = getFuse();
-  const results = fuse.search(query, { limit });
+  let results = fuse.search(query, { limit });
+
+  if (category) {
+    results = results.filter((r) => r.item.category === category);
+  }
 
   return results.map((r) => {
     const content = r.item.content;
@@ -63,9 +67,14 @@ export function searchNotes(query: string, limit = 10): SearchResult[] {
   });
 }
 
-export function getRelevantNotes(query: string, limit = 8): Note[] {
+export function getRelevantNotes(query: string, limit = 8, category?: string): Note[] {
   if (!query || query.trim().length < 2) return [];
   const fuse = getFuseRag();
-  const results = fuse.search(query, { limit });
+  let results = fuse.search(query, { limit });
+
+  if (category) {
+    results = results.filter((r) => r.item.category === category);
+  }
+
   return results.map((r) => r.item);
 }

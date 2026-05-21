@@ -15,7 +15,7 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 
 ## Funzionalità
 
-- [ ] **Filtro per categoria** — sidebar cliccabile per filtrare il grafo e i risultati
+- [x] **Filtro per categoria** — sidebar cliccabile per filtrare il grafo e i risultati
 - [ ] **Breadcrumb di navigazione** — seguire i collegamenti tra note in modo visibile
 - [ ] **Note correlate** — suggerimento automatico di note simili nel NoteSheet (basato su link condivisi o similarità testo)
 - [ ] **Statistiche** — dashboard con conteggio note per categoria, note più collegate, timeline
