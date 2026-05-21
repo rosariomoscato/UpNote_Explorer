@@ -1,6 +1,6 @@
 # Stato del Progetto — UpNote Knowledge Explorer
 
-Ultimo aggiornamento: 2026-05-21
+Ultimo aggiornamento: 2026-05-21 (sessione 2)
 
 ## Cos'è
 
@@ -33,8 +33,8 @@ upnote-explorer/
 │       └── rebuild/route.ts  ← re-index + reload
 ├── components/
 │   ├── note-graph.tsx        ← vis-network grafo con tooltip hover + mini-preview card
-│   ├── note-sheet.tsx        ← Panel laterale custom (framer-motion) con markdown + allegati + link + breadcrumb + note correlate
-│   ├── search-bar.tsx        ← barra ricerca + selettore modalità + keyboard shortcuts
+│   ├── note-sheet.tsx        ← Panel laterale custom (framer-motion) con markdown + allegati + link + breadcrumb + note correlate + export (MD/PDF) + highlight
+│   ├── search-bar.tsx        ← barra ricerca + selettore modalità + keyboard shortcuts + cronologia ricerche
 │   ├── search-results.tsx    ← lista risultati con fade-in animato + navigazione tastiera
 │   ├── rag-answer.tsx        ← risposta AI con citazioni
 │   ├── sidebar-nav.tsx       ← sidebar categorie (filtro cliccabile)
@@ -43,6 +43,9 @@ upnote-explorer/
 │   └── statistics.tsx        ← dashboard statistiche (categorie, note più collegate, timeline)
 ├── data/notes.json           ← generato dal build (gitignorato)
 ├── public/files/             ← allegati copiati dal build (gitignorato)
+├── hooks/
+│   ├── use-search-history.ts ← hook cronologia ricerche (localStorage, max 20)
+│   └── use-mobile.ts         ← hook responsive breakpoint
 ├── MIGLIORAMENTI.md          ← lista miglioramenti da implementare
 └── .env.local                ← LLM_PROVIDER, OPENROUTER_API_KEY, OPENROUTER_MODEL
 ```
@@ -85,6 +88,9 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - **Note correlate** — sezione nel NoteSheet con suggerimento automatico di note simili basato su backlink (+3), forward link (+3), link condivisi (+2), stessa categoria (+1)
 - **Statistiche** — dashboard con: stat card (note, categorie, collegamenti, allegati), bar chart note per categoria, top 8 note più collegate (cliccabili), timeline creazione note, info contenuto medio
 - **Keyboard shortcuts completi** — `/` focus ricerca, `Tab` cambia modalità, `Esc` chiude sheet, `↑↓` naviga risultati (con scroll automatico), `Enter` apre nota selezionata
+- **Export nota singola** — dropdown con icona Download nell'header NoteSheet: esporta come Markdown (.md, blob download diretto) o PDF (finestra stampabile con HTML stilizzato). Zero dipendenze extra
+- **Full-text highlight** — termini cercati evidenziati con `<mark class="search-highlight">` nel contenuto della nota aperta nel NoteSheet. Highlight applicato solo al testo visibile (non dentro tag HTML), case-insensitive. Stile adattivo dark/light con sfondo indigo
+- **Cronologia ricerche** — ultime 20 ricerche salvate in localStorage (`upnote-search-history`). Dropdown "Ricerche recenti" al focus sulla search bar: mostra max 10 voci filtrate while-you-type, click per rilanciare, X per rimuovere singola voce, "Cancella tutto" per svuotare. Hook `useSearchHistory` con lazy init (no effect)
 
 ## Decisioni prese
 
@@ -98,19 +104,21 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - Patch `Node.prototype.removeChild` in `layout.tsx` per suppressione errore DOM noto di React 19 + base-ui
 - Link UpNote hanno formato `"#Categoria | Titolo"` — risoluzione normalizza underscore e spazi
 - Search state gestito in `page.tsx` (non in `SearchBar`) per permettere reset da "Cancella risultati"
+- Export PDF via `window.open` + `window.print()` con HTML stilizzato (no lib PDF)
+- Export MD via Blob API + URL.createObjectURL (no dipendenze)
+- Highlight: `highlightHtml()` split HTML per tag e applica `<mark>` solo su text nodes
+- Cronologia: `useState(loadHistory)` con lazy initializer per evitare effect SSR warning
 
 ## Avvertenze tecniche
 
 - ShadCN usa `@base-ui/react` (non Radix) — niente `asChild` su TooltipTrigger
 - vis-network `smooth` richiede `{ enabled: true, type: "continuous", roundness: 0.5 }`
 - Bug noto: `removeChild` DOM error alla chiusura di componenti base-ui — gestito con patch in `layout.tsx`
-- Per push su GitHub serve impostare remote con PAT, poi ripulire:
+- Per push su GitHub usare SSH con deploy key:
   ```bash
-  git remote set-url origin https://rosariomoscato:<PAT>@github.com/rosariomoscato/UpNote_Explorer.git
-  git push origin main
-  git remote set-url origin https://github.com/rosariomoscato/UpNote_Explorer.git
+  GIT_SSH_COMMAND="ssh -i /home/rosario/Documenti/Chiavi/deploy_key_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin main
   ```
 
 ## Prossimi passi
 
-Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti nella sezione Funzionalità: export nota singola, full-text highlight, cronologia ricerche. Generalizzazione: supporto qualsiasi cartella markdown. AI/RAG: chat multi-turno, sorgenti espandibili, generazione riassunti.
+Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti nella sezione Funzionalità: (nessuna — tutte completate). Generalizzazione: supporto qualsiasi cartella markdown. AI/RAG: chat multi-turno, sorgenti espandibili, generazione riassunti.
