@@ -470,6 +470,7 @@ export default function Home() {
         onBreadcrumbClick={handleBreadcrumbClick}
         onLinkClick={handleLinkClick}
         relatedNotes={relatedNotes}
+        highlightQuery={searchQuery}
       />
 
       <footer className="absolute bottom-0 left-0 right-0 z-10 py-2 text-center">

@@ -69,6 +69,7 @@ interface NoteSheetProps {
   onBreadcrumbClick: (noteId: string) => void;
   onLinkClick: (linkTitle: string) => void;
   relatedNotes: Note[];
+  highlightQuery?: string;
 }
 
 function getFileIcon(filename: string) {
@@ -79,7 +80,20 @@ function getFileIcon(filename: string) {
   return <FileText className="h-3.5 w-3.5" />;
 }
 
-function NoteContent({ content, onLinkClick }: { content: string; onLinkClick: (title: string) => void }) {
+function highlightHtml(html: string, query: string): string {
+  if (!query || query.trim().length < 2) return html;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(escaped, "gi");
+  const parts = html.split(/(<[^>]+>)/);
+  return parts
+    .map((part) => {
+      if (part.startsWith("<")) return part;
+      return part.replace(re, '<mark class="search-highlight">$&</mark>');
+    })
+    .join("");
+}
+
+function NoteContent({ content, onLinkClick, highlightQuery }: { content: string; onLinkClick: (title: string) => void; highlightQuery?: string }) {
   const html = useMemo(() => {
     const cleaned = content.replace(/\\_/g, "_");
     const renderer = new marked.Renderer();
@@ -95,8 +109,9 @@ function NoteContent({ content, onLinkClick }: { content: string; onLinkClick: (
       gfm: true,
       renderer,
     });
-    return marked.parse(cleaned) as string;
-  }, [content]);
+    const parsed = marked.parse(cleaned) as string;
+    return highlightQuery ? highlightHtml(parsed, highlightQuery) : parsed;
+  }, [content, highlightQuery]);
 
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -169,7 +184,7 @@ function ExportMenu({ note }: { note: Note }) {
   );
 }
 
-export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbClick, onLinkClick, relatedNotes }: NoteSheetProps) {
+export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbClick, onLinkClick, relatedNotes, highlightQuery }: NoteSheetProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -246,7 +261,7 @@ export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbC
 
             <div className="flex-1 min-h-0 overflow-y-auto">
               <div className="p-4">
-                <NoteContent content={note.content} onLinkClick={onLinkClick} />
+                <NoteContent content={note.content} onLinkClick={onLinkClick} highlightQuery={highlightQuery} />
 
                 {note.attachments.length > 0 && (
                   <>

@@ -20,7 +20,7 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 - [x] **Note correlate** — suggerimento automatico di note simili nel NoteSheet (basato su link condivisi o similarità testo)
 - [x] **Statistiche** — dashboard con conteggio note per categoria, note più collegate, timeline
 - [x] **Export nota singola** — pulsante per scaricare una nota come PDF o markdown
-- [ ] **Full-text highlight** — evidenziare i termini cercati nel contenuto della nota aperta
+- [x] **Full-text highlight** — evidenziare i termini cercati nel contenuto della nota aperta
 - [x] **Keyboard shortcuts** — `/` per focus sulla search, `Esc` per chiudere sheet, `↑↓` per navigare risultati
 - [ ] **Cronologia ricerche** — salvare le ultime ricerche nel localStorage
 
