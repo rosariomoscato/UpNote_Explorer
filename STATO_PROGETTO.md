@@ -1,6 +1,6 @@
 # Stato del Progetto — UpNote Knowledge Explorer
 
-Ultimo aggiornamento: 2026-05-20
+Ultimo aggiornamento: 2026-05-21
 
 ## Cos'è
 
@@ -21,25 +21,26 @@ upnote-explorer/
 ├── scripts/build-notes.ts    ← build pipeline (note + file allegati)
 ├── lib/
 │   ├── types.ts              ← Note, GraphNode/Edge, CATEGORY_COLORS
-│   ├── notes-loader.ts       ← caricamento note (client/server safe)
-│   └── search-engine.ts      ← fuse.js doppio (text search + RAG)
+│   ├── notes-loader.ts       ← caricamento note + getRelatedNotes()
+│   └── search-engine.ts      ← fuse.js doppio (text search + RAG, filtro categoria)
 ├── app/
 │   ├── page.tsx              ← pagina principale con tutti gli stati UI
 │   ├── layout.tsx            ← ThemeProvider + TooltipProvider + removeChild fix
 │   ├── globals.css           ← tema futuro, glass-morphism, glow, markdown styles
 │   └── api/
-│       ├── ask/route.ts      ← RAG endpoint (openrouter/ollama/openai)
-│       ├── search/route.ts   ← fuse.js search
+│       ├── ask/route.ts      ← RAG endpoint (filtro categoria)
+│       ├── search/route.ts   ← fuse.js search (filtro categoria)
 │       └── rebuild/route.ts  ← re-index + reload
 ├── components/
 │   ├── note-graph.tsx        ← vis-network grafo con tooltip hover + mini-preview card
-│   ├── note-sheet.tsx        ← Panel laterale custom (framer-motion) con markdown + allegati + link
+│   ├── note-sheet.tsx        ← Panel laterale custom (framer-motion) con markdown + allegati + link + breadcrumb + note correlate
 │   ├── search-bar.tsx        ← barra ricerca + selettore modalità + keyboard shortcuts
-│   ├── search-results.tsx    ← lista risultati con fade-in animato
+│   ├── search-results.tsx    ← lista risultati con fade-in animato + navigazione tastiera
 │   ├── rag-answer.tsx        ← risposta AI con citazioni
-│   ├── sidebar-nav.tsx       ← sidebar categorie
+│   ├── sidebar-nav.tsx       ← sidebar categorie (filtro cliccabile)
 │   ├── theme-toggle.tsx      ← dark/light toggle
-│   └── space-background.tsx  ← background spaziale animato (stelle, nebulose, stelle cadenti)
+│   ├── space-background.tsx  ← background spaziale animato (stelle, nebulose, stelle cadenti)
+│   └── statistics.tsx        ← dashboard statistiche (categorie, note più collegate, timeline)
 ├── data/notes.json           ← generato dal build (gitignorato)
 ├── public/files/             ← allegati copiati dal build (gitignorato)
 ├── MIGLIORAMENTI.md          ← lista miglioramenti da implementare
@@ -65,7 +66,7 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 6. Salva `data/notes.json` e copia file in `public/files/`
 7. Flag `--cleanup` per eliminare export vecchi
 
-## Miglioramenti implementati (2026-05-20)
+## Miglioramenti implementati
 
 ### Grafica / UI
 
@@ -75,10 +76,15 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - **Tema animato** — background spaziale con stelle a 3 strati (parallax), nebulose animate, particelle fluttuanti, stelle cadenti. Colori adattivi dark/light
 - **Empty state** — schermata iniziale con icona Brain animata, stat card (note/categorie/collegamenti), keyboard shortcuts hint
 - **Markdown rendering** — note renderizzate con markdown reale (headers, liste, link, code, blockquote, tabelle) via `marked`. Link blu, apribili in nuova scheda. Fix escape underscore nei URL
+- **NoteSheet tema adattivo** — background usa `bg-background/95` invece di colore hardcoded, si adatta a tema chiaro/scuro
 
 ### Funzionalità
 
-- **Keyboard shortcuts** — `/` per focus sulla ricerca, `Tab` (nell'input vuoto) per cambiare modalità testo/AI
+- **Filtro per categoria** — sidebar cliccabile per filtrare grafo, risultati ricerca e RAG. Indicatore filtro con chip colorata e pulsante X
+- **Breadcrumb di navigazione** — trail visibile nel NoteSheet quando si naviga tra note collegate. Link nel contenuto markdown e sezione "Collegamenti" sono cliccabili
+- **Note correlate** — sezione nel NoteSheet con suggerimento automatico di note simili basato su backlink (+3), forward link (+3), link condivisi (+2), stessa categoria (+1)
+- **Statistiche** — dashboard con: stat card (note, categorie, collegamenti, allegati), bar chart note per categoria, top 8 note più collegate (cliccabili), timeline creazione note, info contenuto medio
+- **Keyboard shortcuts completi** — `/` focus ricerca, `Tab` cambia modalità, `Esc` chiude sheet, `↑↓` naviga risultati (con scroll automatico), `Enter` apre nota selezionata
 
 ## Decisioni prese
 
@@ -90,6 +96,8 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - NoteSheet custom con framer-motion invece del componente Sheet base-ui (bug removeChild)
 - `marked` per markdown rendering (non react-markdown — conflitto DOM con base-ui)
 - Patch `Node.prototype.removeChild` in `layout.tsx` per suppressione errore DOM noto di React 19 + base-ui
+- Link UpNote hanno formato `"#Categoria | Titolo"` — risoluzione normalizza underscore e spazi
+- Search state gestito in `page.tsx` (non in `SearchBar`) per permettere reset da "Cancella risultati"
 
 ## Avvertenze tecniche
 
@@ -105,4 +113,4 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 ## Prossimi passi
 
-Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti nella sezione Grafica/UI: nessuno. Prossimi: Funzionalità (filtro per categoria, breadcrumb, note correlate, statistiche, export, highlight, cronologia ricerche), Generalizzazione, AI/RAG.
+Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti nella sezione Funzionalità: export nota singola, full-text highlight, cronologia ricerche. Generalizzazione: supporto qualsiasi cartella markdown. AI/RAG: chat multi-turno, sorgenti espandibili, generazione riassunti.
