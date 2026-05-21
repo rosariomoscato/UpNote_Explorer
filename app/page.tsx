@@ -11,9 +11,10 @@ import { NoteSheet } from "@/components/note-sheet";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SpaceBackground } from "@/components/space-background";
+import { Statistics } from "@/components/statistics";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain, Network, RefreshCw, X } from "lucide-react";
+import { Brain, Network, RefreshCw, X, BarChart3 } from "lucide-react";
 
 const allNotes = loadNotes();
 const categories = getCategories();
@@ -282,6 +283,13 @@ export default function Home() {
                     <span className="ml-1 h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
                   )}
                 </TabsTrigger>
+                <TabsTrigger
+                  value="stats"
+                  className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-200"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Statistiche
+                </TabsTrigger>
               </TabsList>
 
               {selectedCategory && activeCategoryColor && (
@@ -394,6 +402,14 @@ export default function Home() {
                       </div>
                     </div>
                   )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="stats" className="flex-1 min-h-0 mt-0">
+              <ScrollArea className="h-full">
+                <div className="px-6 py-4 max-w-4xl mx-auto">
+                  <Statistics notes={filteredNotes} onNoteClick={handleNoteClick} />
                 </div>
               </ScrollArea>
             </TabsContent>
