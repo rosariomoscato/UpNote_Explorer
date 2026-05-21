@@ -8,9 +8,10 @@ interface SearchResultsProps {
   results: SearchResult[];
   query: string;
   onNoteClick: (noteId: string) => void;
+  focusedIndex?: number;
 }
 
-export function SearchResults({ results, query, onNoteClick }: SearchResultsProps) {
+export function SearchResults({ results, query, onNoteClick, focusedIndex = -1 }: SearchResultsProps) {
   if (results.length === 0) return null;
 
   return (
@@ -24,10 +25,12 @@ export function SearchResults({ results, query, onNoteClick }: SearchResultsProp
       <p className="text-sm text-muted-foreground">
         Trovati <strong className="text-foreground">{results.length}</strong> risultati per &quot;{query}&quot;
       </p>
-      {results.map((result) => (
+      {results.map((result, idx) => (
         <div
           key={result.item.id}
-          className="glass-card rounded-xl p-5 cursor-pointer group"
+          className={`glass-card rounded-xl p-5 cursor-pointer group transition-all duration-200 ${
+            idx === focusedIndex ? "ring-2 ring-primary/50 bg-primary/10" : ""
+          }`}
           onClick={() => onNoteClick(result.item.id)}
         >
           <div className="flex items-start justify-between gap-3 mb-3">

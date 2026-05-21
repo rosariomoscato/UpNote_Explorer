@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { loadNotes, getCategories, getNoteById, getRelatedNotes } from "@/lib/notes-loader";
 import { SearchResult, Note, SearchMode } from "@/lib/types";
 import { SearchBar } from "@/components/search-bar";
@@ -33,6 +33,7 @@ export default function Home() {
   const [lastQuery, setLastQuery] = useState("");
   const [isRebuilding, setIsRebuilding] = useState(false);
   const [notesVersion, setNotesVersion] = useState(0);
+  const [focusedResultIndex, setFocusedResultIndex] = useState(-1);
 
   const filteredNotes = selectedCategory
     ? allNotes.filter((n) => n.category === selectedCategory)
@@ -51,6 +52,39 @@ export default function Home() {
     : null;
 
   const currentNotes = notesVersion >= 0 ? filteredNotes : filteredNotes;
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (sheetOpen) {
+          setSheetOpen(false);
+          setNoteHistory([]);
+        }
+        return;
+      }
+
+      const inInput = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA";
+      if (inInput) return;
+
+      if (e.key === "ArrowDown" && activeTab === "results" && filteredSearchResults.length > 0) {
+        e.preventDefault();
+        setFocusedResultIndex((i) => Math.min(i + 1, filteredSearchResults.length - 1));
+      } else if (e.key === "ArrowUp" && activeTab === "results" && filteredSearchResults.length > 0) {
+        e.preventDefault();
+        setFocusedResultIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter" && focusedResultIndex >= 0 && activeTab === "results") {
+        e.preventDefault();
+        const note = filteredSearchResults[focusedResultIndex];
+        if (note) handleNoteClick(note.item.id);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [sheetOpen, activeTab, filteredSearchResults, focusedResultIndex]);
+
+  useEffect(() => {
+    setFocusedResultIndex(-1);
+  }, [filteredSearchResults]);
 
   const relatedNotes = useMemo(() => {
     if (!selectedNote) return [];
@@ -354,6 +388,7 @@ export default function Home() {
                       results={filteredSearchResults}
                       query={lastQuery}
                       onNoteClick={handleNoteClick}
+                      focusedIndex={focusedResultIndex}
                     />
                   )}
 
@@ -398,6 +433,14 @@ export default function Home() {
                         <span className="flex items-center gap-1.5">
                           <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">Tab</kbd>
                           nella ricerca: cambia modalit&agrave;
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">Esc</kbd>
+                          Chiudi scheda
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">↑↓</kbd>
+                          Naviga risultati
                         </span>
                       </div>
                     </div>

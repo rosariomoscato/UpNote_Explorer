@@ -21,7 +21,7 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 - [x] **Statistiche** — dashboard con conteggio note per categoria, note più collegate, timeline
 - [ ] **Export nota singola** — pulsante per scaricare una nota come PDF o markdown
 - [ ] **Full-text highlight** — evidenziare i termini cercati nel contenuto della nota aperta
-- [ ] **Keyboard shortcuts** — `/` per focus sulla search, `Esc` per chiudere sheet, `↑↓` per navigare risultati
+- [x] **Keyboard shortcuts** — `/` per focus sulla search, `Esc` per chiudere sheet, `↑↓` per navigare risultati
 - [ ] **Cronologia ricerche** — salvare le ultime ricerche nel localStorage
 
 ## Generalizzazione
