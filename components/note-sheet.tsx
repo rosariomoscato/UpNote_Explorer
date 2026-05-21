@@ -88,7 +88,7 @@ export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbC
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            className="fixed inset-y-0 right-0 z-50 w-[480px] sm:max-w-[480px] bg-[#0a0e1f]/95 backdrop-blur-xl border-l border-indigo-500/15 shadow-2xl flex flex-col"
+            className="fixed inset-y-0 right-0 z-50 w-[480px] sm:max-w-[480px] bg-background/95 backdrop-blur-xl border-l border-indigo-500/15 shadow-2xl flex flex-col"
           >
             <div className="flex items-center justify-between p-4 border-b border-border/10">
               <div className="flex flex-col gap-1 min-w-0">
