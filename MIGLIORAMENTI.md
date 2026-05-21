@@ -17,7 +17,7 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 
 - [x] **Filtro per categoria** — sidebar cliccabile per filtrare il grafo e i risultati
 - [x] **Breadcrumb di navigazione** — seguire i collegamenti tra note in modo visibile
-- [ ] **Note correlate** — suggerimento automatico di note simili nel NoteSheet (basato su link condivisi o similarità testo)
+- [x] **Note correlate** — suggerimento automatico di note simili nel NoteSheet (basato su link condivisi o similarità testo)
 - [ ] **Statistiche** — dashboard con conteggio note per categoria, note più collegate, timeline
 - [ ] **Export nota singola** — pulsante per scaricare una nota come PDF o markdown
 - [ ] **Full-text highlight** — evidenziare i termini cercati nel contenuto della nota aperta

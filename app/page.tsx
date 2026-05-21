@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { loadNotes, getCategories, getNoteById } from "@/lib/notes-loader";
+import { useState, useCallback, useMemo } from "react";
+import { loadNotes, getCategories, getNoteById, getRelatedNotes } from "@/lib/notes-loader";
 import { SearchResult, Note, SearchMode } from "@/lib/types";
 import { SearchBar } from "@/components/search-bar";
 import { SearchResults } from "@/components/search-results";
@@ -50,6 +50,11 @@ export default function Home() {
     : null;
 
   const currentNotes = notesVersion >= 0 ? filteredNotes : filteredNotes;
+
+  const relatedNotes = useMemo(() => {
+    if (!selectedNote) return [];
+    return getRelatedNotes(selectedNote, 5);
+  }, [selectedNote]);
 
   const handleRebuild = useCallback(async () => {
     setIsRebuilding(true);
@@ -403,6 +408,7 @@ export default function Home() {
         noteHistory={noteHistory}
         onBreadcrumbClick={handleBreadcrumbClick}
         onLinkClick={handleLinkClick}
+        relatedNotes={relatedNotes}
       />
 
       <footer className="absolute bottom-0 left-0 right-0 z-10 py-2 text-center">

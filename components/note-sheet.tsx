@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Note } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { marked } from "marked";
-import { FileText, Image, Paperclip, X, ChevronRight } from "lucide-react";
+import { FileText, Image, Paperclip, X, ChevronRight, Link2 } from "lucide-react";
 
 interface NoteSheetProps {
   note: Note | null;
@@ -14,6 +14,7 @@ interface NoteSheetProps {
   noteHistory: Note[];
   onBreadcrumbClick: (noteId: string) => void;
   onLinkClick: (linkTitle: string) => void;
+  relatedNotes: Note[];
 }
 
 function getFileIcon(filename: string) {
@@ -64,7 +65,7 @@ function NoteContent({ content, onLinkClick }: { content: string; onLinkClick: (
   );
 }
 
-export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbClick, onLinkClick }: NoteSheetProps) {
+export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbClick, onLinkClick, relatedNotes }: NoteSheetProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -193,6 +194,50 @@ export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbC
                             </button>
                           );
                         })}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {relatedNotes.length > 0 && (
+                  <>
+                    <Separator className="my-4 opacity-20" />
+                    <div className="space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground/50 flex items-center gap-1.5">
+                        <Link2 className="h-3.5 w-3.5" />
+                        Note correlate
+                      </p>
+                      <div className="space-y-1.5">
+                        {relatedNotes.map((rn) => (
+                          <button
+                            key={rn.id}
+                            onClick={() => onLinkClick(rn.title)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/50 bg-background/30 hover:bg-accent transition-colors text-left group"
+                          >
+                            <span
+                              className="h-2 w-2 rounded-full shrink-0"
+                              style={{ backgroundColor: rn.categoryColor }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium text-foreground/80 group-hover:text-foreground truncate">
+                                {rn.title}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground/40 truncate">
+                                {rn.content.slice(0, 80).replace(/\n/g, " ")}
+                              </p>
+                            </div>
+                            <span
+                              className="shrink-0 text-[10px] px-2 py-0.5 rounded-full border"
+                              style={{
+                                borderColor: `${rn.categoryColor}30`,
+                                color: rn.categoryColor,
+                                backgroundColor: `${rn.categoryColor}08`,
+                              }}
+                            >
+                              {rn.category.replace(/_/g, " ")}
+                            </span>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </>
