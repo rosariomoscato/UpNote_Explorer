@@ -139,12 +139,25 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
     const noteMap = new Map(notes.map((n) => [n.id, n]));
     const addedLinks = new Set<string>();
     for (const note of notes) {
-      for (const linkTitle of note.links) {
-        const target = notes.find(
-          (n) =>
-            n.id === linkTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") ||
-            n.title.toLowerCase().includes(linkTitle.toLowerCase())
-        );
+      for (const rawLink of note.links) {
+        let linkTitle = rawLink;
+        if (linkTitle.startsWith("#")) {
+          const pipeIdx = linkTitle.indexOf(" | ");
+          if (pipeIdx >= 0) {
+            linkTitle = linkTitle.substring(pipeIdx + 3);
+          } else {
+            linkTitle = linkTitle.substring(1);
+          }
+        }
+        linkTitle = linkTitle.replace(/\\_/g, "_");
+
+        const normalize = (s: string) => s.toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
+        const normLink = normalize(linkTitle);
+
+        const target = notes.find((n) => {
+          const nTitle = normalize(n.title);
+          return nTitle === normLink || nTitle.includes(normLink) || normLink.includes(nTitle);
+        });
         if (target && target.id !== note.id && noteIdSet.has(target.id)) {
           const key = [note.id, target.id].sort().join("-");
           if (!addedLinks.has(key)) {

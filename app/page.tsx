@@ -26,6 +26,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [noteHistory, setNoteHistory] = useState<Note[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("graph");
   const [lastQuery, setLastQuery] = useState("");
@@ -69,8 +70,49 @@ export default function Home() {
     const note = getNoteById(noteId);
     if (note) {
       setSelectedNote(note);
+      setNoteHistory([note]);
       setSheetOpen(true);
     }
+  }, []);
+
+  const handleLinkClick = useCallback((linkTitle: string) => {
+    let title = linkTitle;
+    if (title.startsWith("#")) {
+      const pipeIdx = title.indexOf(" | ");
+      if (pipeIdx >= 0) {
+        title = title.substring(pipeIdx + 3);
+      } else {
+        title = title.substring(1);
+      }
+    }
+    title = title.replace(/\\_/g, "_");
+
+    const normalize = (s: string) => s.toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
+
+    const normTitle = normalize(title);
+    const note = allNotes.find((n) => {
+      const nTitle = normalize(n.title);
+      return nTitle === normTitle || nTitle.includes(normTitle) || normTitle.includes(nTitle);
+    });
+    if (note) {
+      setNoteHistory((prev) => {
+        const idx = prev.findIndex((n) => n.id === note.id);
+        if (idx >= 0) return prev.slice(0, idx + 1);
+        return [...prev, note];
+      });
+      setSelectedNote(note);
+    }
+  }, []);
+
+  const handleBreadcrumbClick = useCallback((noteId: string) => {
+    setNoteHistory((prev) => prev.slice(0, prev.findIndex((n) => n.id === noteId) + 1));
+    const note = getNoteById(noteId);
+    if (note) setSelectedNote(note);
+  }, []);
+
+  const handleSheetClose = useCallback((open: boolean) => {
+    setSheetOpen(open);
+    if (!open) setNoteHistory([]);
   }, []);
 
   const handleClearSearch = useCallback(() => {
@@ -354,7 +396,14 @@ export default function Home() {
         </div>
       </main>
 
-      <NoteSheet note={selectedNote} open={sheetOpen} onOpenChange={setSheetOpen} />
+      <NoteSheet
+        note={selectedNote}
+        open={sheetOpen}
+        onOpenChange={handleSheetClose}
+        noteHistory={noteHistory}
+        onBreadcrumbClick={handleBreadcrumbClick}
+        onLinkClick={handleLinkClick}
+      />
 
       <footer className="absolute bottom-0 left-0 right-0 z-10 py-2 text-center">
         <p className="text-xs text-muted-foreground/40">
