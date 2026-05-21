@@ -15,6 +15,7 @@ import { Statistics } from "@/components/statistics";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Brain, Network, RefreshCw, X, BarChart3 } from "lucide-react";
+import { useSearchHistory } from "@/hooks/use-search-history";
 
 const allNotes = loadNotes();
 const categories = getCategories();
@@ -35,6 +36,7 @@ export default function Home() {
   const [notesVersion, setNotesVersion] = useState(0);
   const [focusedResultIndex, setFocusedResultIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState("");
+  const { history: searchHistory, add: addHistory, remove: removeHistory, clear: clearHistory } = useSearchHistory();
 
   const filteredNotes = selectedCategory
     ? allNotes.filter((n) => n.category === selectedCategory)
@@ -285,7 +287,7 @@ export default function Home() {
         {/* Header */}
         <header className="h-16 shrink-0 glass border-b border-indigo-500/10 px-6 flex items-center gap-4">
           <div className="flex-1">
-            <SearchBar onSearch={handleSearch} isLoading={isLoading} value={searchQuery} onChange={setSearchQuery} />
+            <SearchBar onSearch={handleSearch} isLoading={isLoading} value={searchQuery} onChange={setSearchQuery} searchHistory={searchHistory} onAddHistory={addHistory} onRemoveHistory={removeHistory} onClearHistory={clearHistory} />
           </div>
           <button
             onClick={handleRebuild}

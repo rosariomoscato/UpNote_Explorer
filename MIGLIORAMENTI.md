@@ -22,7 +22,7 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 - [x] **Export nota singola** — pulsante per scaricare una nota come PDF o markdown
 - [x] **Full-text highlight** — evidenziare i termini cercati nel contenuto della nota aperta
 - [x] **Keyboard shortcuts** — `/` per focus sulla search, `Esc` per chiudere sheet, `↑↓` per navigare risultati
-- [ ] **Cronologia ricerche** — salvare le ultime ricerche nel localStorage
+- [x] **Cronologia ricerche** — salvare le ultime ricerche nel localStorage
 
 ## Generalizzazione
 

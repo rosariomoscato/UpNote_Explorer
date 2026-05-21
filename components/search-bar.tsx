@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Search, Sparkles, FileText } from "lucide-react";
+import { Search, Sparkles, FileText, Clock, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SearchMode } from "@/lib/types";
@@ -11,11 +11,17 @@ interface SearchBarProps {
   isLoading: boolean;
   value: string;
   onChange: (value: string) => void;
+  searchHistory: string[];
+  onAddHistory: (query: string) => void;
+  onRemoveHistory: (query: string) => void;
+  onClearHistory: () => void;
 }
 
-export function SearchBar({ onSearch, isLoading, value, onChange }: SearchBarProps) {
+export function SearchBar({ onSearch, isLoading, value, onChange, searchHistory, onAddHistory, onRemoveHistory, onClearHistory }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<SearchMode>("text");
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -32,25 +38,54 @@ export function SearchBar({ onSearch, isLoading, value, onChange }: SearchBarPro
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [value]);
 
+  useEffect(() => {
+    if (!showHistory) return;
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setShowHistory(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showHistory]);
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (value.trim()) {
+        onAddHistory(value.trim());
         onSearch(value.trim(), mode);
+        setShowHistory(false);
       }
     },
-    [value, mode, onSearch]
+    [value, mode, onSearch, onAddHistory]
   );
+
+  const handleHistorySelect = useCallback(
+    (query: string) => {
+      onChange(query);
+      onSearch(query, mode);
+      onAddHistory(query);
+      setShowHistory(false);
+      inputRef.current?.blur();
+    },
+    [mode, onChange, onSearch, onAddHistory]
+  );
+
+  const filteredHistory = value.trim()
+    ? searchHistory.filter((q) => q.toLowerCase().includes(value.toLowerCase()))
+    : searchHistory;
+
+  const showDropdown = showHistory && filteredHistory.length > 0 && !isLoading;
 
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-3 w-full max-w-3xl mx-auto">
-      <div className="relative flex-1 search-glow rounded-xl transition-all duration-300">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="relative flex-1 search-glow rounded-xl transition-all duration-300" ref={wrapperRef}>
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
         <Input
           ref={inputRef}
           data-search-input
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setShowHistory(true)}
           placeholder={
             mode === "text"
               ? "Cerca nelle tue note..."
@@ -58,6 +93,42 @@ export function SearchBar({ onSearch, isLoading, value, onChange }: SearchBarPro
           }
           className="pl-11 h-12 text-base bg-background/60 border-border rounded-xl placeholder:text-muted-foreground/50 transition-all duration-300"
         />
+
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl border border-border/40 bg-popover/95 backdrop-blur-xl shadow-xl animate-in fade-in-0 zoom-in-95 overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border/20">
+              <span className="text-[11px] font-medium text-muted-foreground/50 flex items-center gap-1.5">
+                <Clock className="h-3 w-3" />
+                Ricerche recenti
+              </span>
+              <button
+                onClick={() => { onClearHistory(); setShowHistory(false); }}
+                className="text-[11px] text-muted-foreground/40 hover:text-destructive transition-colors flex items-center gap-1"
+              >
+                <Trash2 className="h-3 w-3" />
+                Cancella tutto
+              </button>
+            </div>
+            <div className="max-h-64 overflow-y-auto py-1">
+              {filteredHistory.slice(0, 10).map((query) => (
+                <div
+                  key={query}
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-accent transition-colors group cursor-pointer"
+                  onClick={() => handleHistorySelect(query)}
+                >
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
+                  <span className="text-sm text-popover-foreground truncate flex-1">{query}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRemoveHistory(query); }}
+                    className="opacity-0 group-hover:opacity-100 h-5 w-5 inline-flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-all shrink-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <button
