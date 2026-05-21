@@ -9,12 +9,13 @@ import { SearchMode } from "@/lib/types";
 interface SearchBarProps {
   onSearch: (query: string, mode: SearchMode) => void;
   isLoading: boolean;
+  value: string;
+  onChange: (value: string) => void;
 }
 
-export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
-  const [query, setQuery] = useState("");
-  const [mode, setMode] = useState<SearchMode>("text");
+export function SearchBar({ onSearch, isLoading, value, onChange }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<SearchMode>("text");
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -22,23 +23,23 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
         e.preventDefault();
         inputRef.current?.focus();
       }
-      if (e.key === "Tab" && document.activeElement?.getAttribute("data-search-input") !== null && !query) {
+      if (e.key === "Tab" && document.activeElement?.getAttribute("data-search-input") !== null && !value) {
         e.preventDefault();
         setMode((m) => (m === "text" ? "rag" : "text"));
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [query]);
+  }, [value]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (query.trim()) {
-        onSearch(query.trim(), mode);
+      if (value.trim()) {
+        onSearch(value.trim(), mode);
       }
     },
-    [query, mode, onSearch]
+    [value, mode, onSearch]
   );
 
   return (
@@ -48,8 +49,8 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
         <Input
           ref={inputRef}
           data-search-input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={
             mode === "text"
               ? "Cerca nelle tue note..."
@@ -87,7 +88,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
 
       <Button
         type="submit"
-        disabled={isLoading || !query.trim()}
+        disabled={isLoading || !value.trim()}
         className="h-12 px-6 shrink-0 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white border-0 rounded-xl shadow-md dark:shadow-lg dark:shadow-indigo-500/25 transition-all duration-300 disabled:opacity-40"
       >
         {isLoading ? (

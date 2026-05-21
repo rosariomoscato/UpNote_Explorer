@@ -34,6 +34,7 @@ export default function Home() {
   const [isRebuilding, setIsRebuilding] = useState(false);
   const [notesVersion, setNotesVersion] = useState(0);
   const [focusedResultIndex, setFocusedResultIndex] = useState(-1);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredNotes = selectedCategory
     ? allNotes.filter((n) => n.category === selectedCategory)
@@ -160,6 +161,7 @@ export default function Home() {
     setRagAnswer("");
     setRagSources([]);
     setLastQuery("");
+    setSearchQuery("");
   }, []);
 
   const handleSearch = useCallback(
@@ -283,7 +285,7 @@ export default function Home() {
         {/* Header */}
         <header className="h-16 shrink-0 glass border-b border-indigo-500/10 px-6 flex items-center gap-4">
           <div className="flex-1">
-            <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+            <SearchBar onSearch={handleSearch} isLoading={isLoading} value={searchQuery} onChange={setSearchQuery} />
           </div>
           <button
             onClick={handleRebuild}
