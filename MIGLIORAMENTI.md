@@ -32,4 +32,4 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 
 - [x] **Chat multi-turno** — mantenere il contesto della conversazione invece di una singola domanda
 - [x] **Sorgenti espandibili** — cliccando su una fonte si espande una preview inline con categoria, snippet e pulsanti "Leggi tutto" / "Apri nel grafo" (focus + zoom sul nodo)
-- [ ] **Generazione riassunti** — bottone "Riassumi questa nota" nel NoteSheet
+- [x] **Generazione riassunti** — bottone "Riassumi" nel NoteSheet che chiama l'AI per generare un riassunto conciso della nota, mostrato in card dedicata con streaming

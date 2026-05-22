@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Note } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { marked } from "marked";
-import { FileText, Image, Paperclip, X, ChevronRight, Link2, Download, FileDown, FileType } from "lucide-react";
+import { FileText, Image, Paperclip, X, ChevronRight, Link2, Download, FileDown, FileType, Sparkles, FileSignature } from "lucide-react";
 
 function exportAsMarkdown(note: Note) {
   const meta = [`# ${note.title}`, "", `**Categoria:** ${note.category.replace(/_/g, " ")}`];
@@ -184,7 +184,44 @@ function ExportMenu({ note }: { note: Note }) {
   );
 }
 
+function SummaryCard({ summary, isStreaming, onDismiss }: { summary: string; isStreaming: boolean; onDismiss: () => void }) {
+  const html = useMemo(() => {
+    if (!summary) return "";
+    return marked.parse(summary.replace(/\\_/g, "_")) as string;
+  }, [summary]);
+
+  return (
+    <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 mb-4">
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Sparkles className="h-4 w-4 text-cyan-400" />
+            <div className="absolute inset-0 blur-sm bg-cyan-400/30" />
+          </div>
+          <span className="text-xs font-medium text-cyan-300/80">Riassunto AI</span>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="h-5 w-5 inline-flex items-center justify-center rounded hover:bg-accent text-muted-foreground/40 hover:text-foreground transition-colors"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+      <div
+        className="note-content text-sm leading-relaxed text-foreground/70"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+      {isStreaming && (
+        <span className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-1 rounded-sm" />
+      )}
+    </div>
+  );
+}
+
 export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbClick, onLinkClick, relatedNotes, highlightQuery }: NoteSheetProps) {
+  const [summary, setSummary] = useState("");
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -195,6 +232,61 @@ export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbC
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  useEffect(() => {
+    setSummary("");
+    setIsSummarizing(false);
+  }, [note?.id]);
+
+  const handleSummarize = async () => {
+    if (!note || isSummarizing) return;
+    setIsSummarizing(true);
+    setSummary("");
+
+    try {
+      const res = await fetch("/api/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: note.title, content: note.content, category: note.category }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        setSummary(err.error || "Errore nella generazione del riassunto");
+        setIsSummarizing(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      if (reader) {
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.text) {
+                fullText += data.text;
+                setSummary(fullText);
+              }
+            } catch { /* skip */ }
+          }
+        }
+      }
+    } catch {
+      setSummary("Errore di connessione.");
+    }
+
+    setIsSummarizing(false);
+  };
 
   return (
     <>
@@ -227,6 +319,19 @@ export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbC
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={handleSummarize}
+                  disabled={isSummarizing}
+                  className="h-8 px-2.5 inline-flex items-center justify-center gap-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+                  title="Riassumi questa nota con AI"
+                >
+                  {isSummarizing ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <FileSignature className="h-4 w-4" />
+                  )}
+                  <span className="text-xs">Riassumi</span>
+                </button>
                 <ExportMenu note={note} />
                 <button
                   onClick={() => onOpenChange(false)}
@@ -261,6 +366,13 @@ export function NoteSheet({ note, open, onOpenChange, noteHistory, onBreadcrumbC
 
             <div className="flex-1 min-h-0 overflow-y-auto">
               <div className="p-4">
+                {summary && (
+                  <SummaryCard
+                    summary={summary}
+                    isStreaming={isSummarizing}
+                    onDismiss={() => setSummary("")}
+                  />
+                )}
                 <NoteContent content={note.content} onLinkClick={onLinkClick} highlightQuery={highlightQuery} />
 
                 {note.attachments.length > 0 && (

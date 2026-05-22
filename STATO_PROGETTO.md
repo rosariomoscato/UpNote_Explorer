@@ -31,6 +31,7 @@ upnote-explorer/
 │   └── api/
 │       ├── ask/route.ts       ← RAG endpoint (filtro categoria)
 │       ├── search/route.ts    ← fuse.js search (filtro categoria)
+│       ├── summarize/route.ts ← riassunto nota singola via LLM
 │       └── rebuild/route.ts   ← re-index + reload
 ├── components/
 │   ├── note-graph.tsx         ← vis-network grafo con tooltip hover + mini-preview card
@@ -93,6 +94,7 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 - **Chat multi-turno** — la conversazione AI mantiene il contesto tra domande successive. Lo storico messaggi viene passato all'API che lo inoltra al LLM come `messages`. UI con chat thread (domande utente + risposte AI con fonti), input per follow-up in basso, pulsante "Nuova chat" per resettare. Il prompt di sistema include il contesto note aggiornato per ogni domanda
 - **Sorgenti espandibili** — le fonti citate nella risposta AI sono espandibili con click: mostrano preview inline con categoria (badge colorato), snippet contenuto (300 char), e due pulsanti azione: "Leggi tutto" (apre NoteSheet) e "Apri nel grafo" (switch tab Grafo + zoom + selezione nodo). `NoteGraph` espone `focusNode()` via `useImperativeHandle`/`forwardRef`
+- **Generazione riassunti** — bottone "Riassumi" nell'header del NoteSheet. Chiama `/api/summarize` che invia titolo + contenuto + categoria al LLM. Risposta in streaming mostrata in card dedicata (border cyan, icona Sparkles). Card dismissable con X. Si resetta automaticamente al cambio nota
 
 - **Supporto qualsiasi cartella markdown** — percorso sorgente e pattern cartella configurabili via `notes.config.json` (rimosso hardcoded `UpNote_*`). Override CLI: `--source`, `--pattern`, `--files-dir`. Nome app nell'UI configurabile via `NEXT_PUBLIC_APP_NAME` in `.env.local`
 
@@ -146,4 +148,4 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 ## Prossimi passi
 
-Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti in AI/RAG: generazione riassunti.
+Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Tutti i miglioramenti pianificati sono completati.
