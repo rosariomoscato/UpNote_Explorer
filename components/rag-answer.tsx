@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Note, ChatMessage } from "@/lib/types";
 import { Sparkles, Send, Plus, User, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { marked } from "marked";
 
 interface RagChatProps {
   messages: ChatMessage[];
@@ -90,18 +91,14 @@ export function RagChat({
             ) : (
               <div className="ml-10 glass-card glow-border rounded-xl overflow-hidden">
                 <div className="p-4">
-                  <div className="text-sm leading-relaxed text-indigo-100/80 whitespace-pre-wrap">
-                    {renderAnswerWithCitations(
-                      msg.content,
-                      (msg.sourceIds || [])
-                        .map((id) => getNoteById(id))
-                        .filter(Boolean) as Note[],
-                      onSourceClick
-                    )}
-                    {msg.isStreaming && (
-                      <span className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-1 rounded-sm" />
-                    )}
-                  </div>
+                  <AnswerContent
+                    content={msg.content}
+                    sources={(msg.sourceIds || [])
+                      .map((id) => getNoteById(id))
+                      .filter(Boolean) as Note[]}
+                    isStreaming={!!msg.isStreaming}
+                    onSourceClick={onSourceClick}
+                  />
                 </div>
 
                 {!msg.isStreaming && msg.sourceIds && msg.sourceIds.length > 0 && (
@@ -204,49 +201,49 @@ export function RagChat({
   );
 }
 
-function renderAnswerWithCitations(
-  answer: string,
-  sources: Note[],
-  onSourceClick: (id: string) => void
-) {
-  if (!answer) return null;
-  const sourcePattern = /\*([^*]+)\*/g;
-  const sourceTitles = sources.map((s) => s.title);
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match;
-
-  while ((match = sourcePattern.exec(answer)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(answer.slice(lastIndex, match.index));
-    }
-    const cited = match[1];
-    const isSource = sourceTitles.some(
-      (t) => t.toLowerCase().includes(cited.toLowerCase()) || cited.toLowerCase().includes(t.toLowerCase())
-    );
-
-    if (isSource) {
-      const found = sources.find(
-        (s) => s.title.toLowerCase().includes(cited.toLowerCase()) || cited.toLowerCase().includes(s.title.toLowerCase())
+function AnswerContent({ content, sources, isStreaming, onSourceClick }: {
+  content: string;
+  sources: Note[];
+  isStreaming: boolean;
+  onSourceClick: (id: string) => void;
+}) {
+  const html = useMemo(() => {
+    if (!content) return "";
+    const sourceTitles = sources.map((s) => s.title);
+    const parsed = marked.parse(content.replace(/\\_/g, "_")) as string;
+    let result = parsed.replace(/<em>([^<]+)<\/em>/g, (match, text) => {
+      const isSource = sourceTitles.some(
+        (t) => t.toLowerCase().includes(text.toLowerCase()) || text.toLowerCase().includes(t.toLowerCase())
       );
-      parts.push(
-        <span
-          key={match.index}
-          className="source-highlight"
-          onClick={() => found && onSourceClick(found.id)}
-        >
-          *{cited}*
-        </span>
-      );
-    } else {
-      parts.push(<em key={match.index} className="text-indigo-300/40">*{cited}*</em>);
+      if (isSource) {
+        const found = sources.find(
+          (s) => s.title.toLowerCase().includes(text.toLowerCase()) || text.toLowerCase().includes(s.title.toLowerCase())
+        );
+        if (found) {
+          return `<span class="source-highlight" data-source-id="${found.id}">${text}</span>`;
+        }
+      }
+      return `<em class="text-indigo-300/40">${text}</em>`;
+    });
+    if (isStreaming) {
+      result += '<span class="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-1 rounded-sm"></span>';
     }
-    lastIndex = match.index + match[0].length;
-  }
+    return result;
+  }, [content, sources, isStreaming]);
 
-  if (lastIndex < answer.length) {
-    parts.push(answer.slice(lastIndex));
-  }
+  const handleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains("source-highlight")) {
+      const id = target.getAttribute("data-source-id");
+      if (id) onSourceClick(id);
+    }
+  };
 
-  return parts;
+  return (
+    <div
+      className="note-content text-sm leading-relaxed text-indigo-100/80"
+      onClick={handleClick}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
