@@ -3,26 +3,67 @@ import * as path from "path";
 import matter from "gray-matter";
 import { Note, extractCategory, CATEGORY_COLORS } from "../lib/types";
 
-const EXPORT_ROOT = path.resolve(__dirname, "../..");
+interface NotesConfig {
+  source: string;
+  pattern: string;
+  filesDir: string;
+  appName: string;
+  appDescription: string;
+}
 
-function findExportDirs(): string[] {
-  const entries = fs.readdirSync(EXPORT_ROOT, { withFileTypes: true });
+const PROJECT_ROOT = path.resolve(__dirname, "..");
+const DEFAULT_CONFIG: NotesConfig = {
+  source: "..",
+  pattern: "UpNote_*",
+  filesDir: "Files",
+  appName: "Knowledge Explorer",
+  appDescription: "Esplora e cerca nelle tue note con AI",
+};
+
+function loadConfig(): NotesConfig {
+  const configPath = path.join(PROJECT_ROOT, "notes.config.json");
+  if (fs.existsSync(configPath)) {
+    const raw = fs.readFileSync(configPath, "utf-8");
+    return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+  }
+  return { ...DEFAULT_CONFIG };
+}
+
+function parseCliArgs(): Partial<NotesConfig> {
+  const args: Partial<NotesConfig> = {};
+  const argv = process.argv.slice(2);
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--source" && argv[i + 1]) args.source = argv[++i];
+    else if (argv[i] === "--pattern" && argv[i + 1]) args.pattern = argv[++i];
+    else if (argv[i] === "--files-dir" && argv[i + 1]) args.filesDir = argv[++i];
+  }
+  return args;
+}
+
+function matchPattern(name: string, pattern: string): boolean {
+  if (pattern === "*") return true;
+  if (pattern.endsWith("*")) return name.startsWith(pattern.slice(0, -1));
+  return name === pattern;
+}
+
+function findExportDirs(source: string, pattern: string): string[] {
+  const entries = fs.readdirSync(source, { withFileTypes: true });
   return entries
-    .filter((e) => e.isDirectory() && e.name.startsWith("UpNote_"))
+    .filter((e) => e.isDirectory() && matchPattern(e.name, pattern))
     .map((e) => ({
       name: e.name,
-      path: path.join(EXPORT_ROOT, e.name),
+      path: path.join(source, e.name),
     }))
     .sort((a, b) => b.name.localeCompare(a.name))
     .map((d) => d.path);
 }
 
-function cleanupOldExports(currentDirs: string[]): void {
-  const entries = fs.readdirSync(EXPORT_ROOT, { withFileTypes: true });
+function cleanupOldExports(source: string, pattern: string, currentDirs: string[]): void {
+  const entries = fs.readdirSync(source, { withFileTypes: true });
   const knownPaths = new Set(currentDirs);
   const oldDirs = entries
-    .filter((e) => e.isDirectory() && e.name.startsWith("UpNote_"))
-    .map((e) => path.join(EXPORT_ROOT, e.name))
+    .filter((e) => e.isDirectory() && matchPattern(e.name, pattern))
+    .map((e) => path.join(source, e.name))
     .filter((p) => !knownPaths.has(p));
 
   for (const dir of oldDirs) {
@@ -143,7 +184,7 @@ function mergeNotes(allDirs: string[]): Note[] {
   return Array.from(noteMap.values());
 }
 
-function mergeFiles(allDirs: string[]): Map<string, string> {
+function mergeFiles(allDirs: string[], filesDirName: string): Map<string, string> {
   const publicFilesDir = path.resolve(__dirname, "../public/files");
   const renameMap = new Map<string, string>();
 
@@ -155,7 +196,7 @@ function mergeFiles(allDirs: string[]): Map<string, string> {
   const seenNames = new Set<string>();
 
   for (const dir of [...allDirs].reverse()) {
-    const filesDir = path.join(dir, "Files");
+    const filesDir = path.join(dir, filesDirName);
     if (!fs.existsSync(filesDir)) continue;
 
     const entries = fs.readdirSync(filesDir);
@@ -195,23 +236,33 @@ function applyRenames(notes: Note[], renameMap: Map<string, string>): void {
 function main() {
   const cleanup = process.argv.includes("--cleanup");
 
-  console.log("=== UpNote Knowledge Explorer - Build Notes ===\n");
+  const fileConfig = loadConfig();
+  const cliOverrides = parseCliArgs();
+  const config: NotesConfig = { ...fileConfig, ...cliOverrides };
 
-  const allDirs = findExportDirs();
+  const source = path.resolve(PROJECT_ROOT, config.source);
+
+  console.log(`=== ${config.appName} - Build Notes ===\n`);
+
+  const allDirs = findExportDirs(source, config.pattern);
 
   if (allDirs.length === 0) {
-    console.error("Nessuna cartella UpNote_* trovata in", EXPORT_ROOT);
+    console.error(
+      `Nessuna cartella con pattern "${config.pattern}" trovata in ${source}`
+    );
+    console.error(`Configura source/pattern in notes.config.json`);
     process.exit(1);
   }
 
-  console.log(`Trovate ${allDirs.length} cartella/e di export:`);
+  console.log(`Sorgente: ${source} (pattern: "${config.pattern}")`);
+  console.log(`Trovate ${allDirs.length} cartella/e di import:`);
   for (const dir of allDirs) {
     const mdCount = fs.readdirSync(dir).filter((f) => f.endsWith(".md")).length;
     console.log(`  - ${path.basename(dir)} (${mdCount} .md)`);
   }
   console.log("");
 
-  const renameMap = mergeFiles(allDirs);
+  const renameMap = mergeFiles(allDirs, config.filesDir);
   const fileCount = fs.readdirSync(path.resolve(__dirname, "../public/files")).length;
   console.log(`✓ Copiati ${fileCount} file allegati → public/files/`);
 
@@ -225,8 +276,8 @@ function main() {
   console.log(`✓ Unite e processate ${mergedNotes.length} note → data/notes.json`);
 
   if (cleanup) {
-    console.log("\nPulizia vecchi export:");
-    cleanupOldExports(allDirs);
+    console.log("\nPulizia vecchi import:");
+    cleanupOldExports(source, config.pattern, allDirs);
   }
 
   console.log("✓ Completato.\n");

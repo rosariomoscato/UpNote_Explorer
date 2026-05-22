@@ -14,9 +14,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const appName = process.env.NEXT_PUBLIC_APP_NAME || "Knowledge Explorer";
+const appDescription = process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Esplora e cerca nelle tue note con AI";
+
 export const metadata: Metadata = {
-  title: "UpNote Knowledge Explorer",
-  description: "Esplora e cerca nelle tue note UpNote con AI",
+  title: appName,
+  description: appDescription,
 };
 
 export default function RootLayout({

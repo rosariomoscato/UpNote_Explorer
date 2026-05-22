@@ -1,10 +1,10 @@
 # Stato del Progetto — UpNote Knowledge Explorer
 
-Ultimo aggiornamento: 2026-05-21 (sessione 2)
+Ultimo aggiornamento: 2026-05-22 (sessione 3)
 
 ## Cos'è
 
-Web app Next.js che visualizza note UpNote come grafo interattivo, con ricerca full-text e Q&A AI (RAG) con citazioni delle fonti. UI futuristica tema spazio.
+Web app Next.js che visualizza note markdown come grafo interattivo, con ricerca full-text e Q&A AI (RAG) con citazioni delle fonti. UI futuristica tema spazio. Configurabile per qualsiasi raccolta di note markdown.
 
 ## Stack
 
@@ -18,36 +18,37 @@ Web app Next.js che visualizza note UpNote come grafo interattivo, con ricerca f
 
 ```
 upnote-explorer/
-├── scripts/build-notes.ts    ← build pipeline (note + file allegati)
+├── notes.config.json          ← configurazione build (source, pattern, filesDir, appName)
+├── scripts/build-notes.ts     ← build pipeline (legge notes.config.json + CLI args)
 ├── lib/
-│   ├── types.ts              ← Note, GraphNode/Edge, CATEGORY_COLORS
-│   ├── notes-loader.ts       ← caricamento note + getRelatedNotes()
-│   └── search-engine.ts      ← fuse.js doppio (text search + RAG, filtro categoria)
+│   ├── types.ts               ← Note, GraphNode/Edge, CATEGORY_COLORS
+│   ├── notes-loader.ts        ← caricamento note + getRelatedNotes()
+│   └── search-engine.ts       ← fuse.js doppio (text search + RAG, filtro categoria)
 ├── app/
-│   ├── page.tsx              ← pagina principale con tutti gli stati UI
-│   ├── layout.tsx            ← ThemeProvider + TooltipProvider + removeChild fix
-│   ├── globals.css           ← tema futuro, glass-morphism, glow, markdown styles
+│   ├── page.tsx               ← pagina principale con tutti gli stati UI
+│   ├── layout.tsx             ← ThemeProvider + TooltipProvider + removeChild fix
+│   ├── globals.css            ← tema futuro, glass-morphism, glow, markdown styles
 │   └── api/
-│       ├── ask/route.ts      ← RAG endpoint (filtro categoria)
-│       ├── search/route.ts   ← fuse.js search (filtro categoria)
-│       └── rebuild/route.ts  ← re-index + reload
+│       ├── ask/route.ts       ← RAG endpoint (filtro categoria)
+│       ├── search/route.ts    ← fuse.js search (filtro categoria)
+│       └── rebuild/route.ts   ← re-index + reload
 ├── components/
-│   ├── note-graph.tsx        ← vis-network grafo con tooltip hover + mini-preview card
-│   ├── note-sheet.tsx        ← Panel laterale custom (framer-motion) con markdown + allegati + link + breadcrumb + note correlate + export (MD/PDF) + highlight
-│   ├── search-bar.tsx        ← barra ricerca + selettore modalità + keyboard shortcuts + cronologia ricerche
-│   ├── search-results.tsx    ← lista risultati con fade-in animato + navigazione tastiera
-│   ├── rag-answer.tsx        ← risposta AI con citazioni
-│   ├── sidebar-nav.tsx       ← sidebar categorie (filtro cliccabile)
-│   ├── theme-toggle.tsx      ← dark/light toggle
-│   ├── space-background.tsx  ← background spaziale animato (stelle, nebulose, stelle cadenti)
-│   └── statistics.tsx        ← dashboard statistiche (categorie, note più collegate, timeline)
-├── data/notes.json           ← generato dal build (gitignorato)
-├── public/files/             ← allegati copiati dal build (gitignorato)
+│   ├── note-graph.tsx         ← vis-network grafo con tooltip hover + mini-preview card
+│   ├── note-sheet.tsx         ← Panel laterale custom (framer-motion) con markdown + allegati + link + breadcrumb + note correlate + export (MD/PDF) + highlight
+│   ├── search-bar.tsx         ← barra ricerca + selettore modalità + keyboard shortcuts + cronologia ricerche
+│   ├── search-results.tsx     ← lista risultati con fade-in animato + navigazione tastiera
+│   ├── rag-answer.tsx         ← risposta AI con citazioni
+│   ├── sidebar-nav.tsx        ← sidebar categorie (filtro cliccabile)
+│   ├── theme-toggle.tsx       ← dark/light toggle
+│   ├── space-background.tsx   ← background spaziale animato (stelle, nebulose, stelle cadenti)
+│   └── statistics.tsx         ← dashboard statistiche (categorie, note più collegate, timeline)
+├── data/notes.json            ← generato dal build (gitignorato)
+├── public/files/              ← allegati copiati dal build (gitignorato)
 ├── hooks/
-│   ├── use-search-history.ts ← hook cronologia ricerche (localStorage, max 20)
-│   └── use-mobile.ts         ← hook responsive breakpoint
-├── MIGLIORAMENTI.md          ← lista miglioramenti da implementare
-└── .env.local                ← LLM_PROVIDER, OPENROUTER_API_KEY, OPENROUTER_MODEL
+│   ├── use-search-history.ts  ← hook cronologia ricerche (localStorage, max 20)
+│   └── use-mobile.ts          ← hook responsive breakpoint
+├── MIGLIORAMENTI.md           ← lista miglioramenti da implementare
+└── .env.local                 ← NEXT_PUBLIC_APP_NAME, LLM_PROVIDER, OPENROUTER_API_KEY, OPENROUTER_MODEL
 ```
 
 ## Come avviare
@@ -61,15 +62,38 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 ## Cosa fa il build (`build-notes.ts`)
 
-1. Trova tutte le cartelle `UpNote_*` in `/home/rosario/UpNote_Export/`
-2. Merge file allegati (da più vecchio a più recente = più recente vince)
-3. Se nomi duplicati → rinomina con suffisso e aggiorna riferimenti nelle note
-4. Merge note per slug (stessa logica: più recente vince)
-5. Estrae link interni `[testo](%23...)` e allegati `![...](Files/...)` e `[...](Files/...)`
-6. Salva `data/notes.json` e copia file in `public/files/`
-7. Flag `--cleanup` per eliminare export vecchi
+1. Legge configurazione da `notes.config.json` (override CLI: `--source`, `--pattern`, `--files-dir`)
+2. Trova tutte le cartelle nel percorso `source` che corrispondono al `pattern` (es. `UpNote_*`, `*` per tutte)
+3. Merge file allegati dalla sottocartella `filesDir` (da più vecchio a più recente = più recente vince)
+4. Se nomi duplicati → rinomina con suffisso e aggiorna riferimenti nelle note
+5. Merge note per slug (stessa logica: più recente vince)
+6. Estrae link interni `[testo](%23...)` e allegati `![...](Files/...)` e `[...](Files/...)`
+7. Salva `data/notes.json` e copia file in `public/files/`
+8. Flag `--cleanup` per eliminare export vecchi
+
+### Configurazione (`notes.config.json`)
+
+```json
+{
+  "source": "..",
+  "pattern": "UpNote_*",
+  "filesDir": "Files",
+  "appName": "UpNote Knowledge Explorer",
+  "appDescription": "Esplora e cerca nelle tue note UpNote con AI"
+}
+```
+
+- `source`: percorso relativo alla root del progetto (o assoluto)
+- `pattern`: pattern nomi cartella (`UpNote_*` = prefisso, `*` = tutte le cartelle, `nome_esatto` = match esatto)
+- `filesDir`: nome della sottocartella con gli allegati (default `Files`)
+- `appName`/`appDescription`: usati nei messaggi console del build
+- Il nome dell'app nell'UI è configurato via `NEXT_PUBLIC_APP_NAME` in `.env.local`
 
 ## Miglioramenti implementati
+
+### Generalizzazione
+
+- **Supporto qualsiasi cartella markdown** — percorso sorgente e pattern cartella configurabili via `notes.config.json` (rimosso hardcoded `UpNote_*`). Override CLI: `--source`, `--pattern`, `--files-dir`. Nome app nell'UI configurabile via `NEXT_PUBLIC_APP_NAME` in `.env.local`
 
 ### Grafica / UI
 
@@ -96,8 +120,7 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 - `generateText` (non `streamText`) per RAG — streaming vuoto con OpenRouter
 - `@ai-sdk/openai` con `createOpenAI({ baseURL })` per tutti i provider
-- Merge da TUTTE le cartelle export (non solo l'ultima) per non perdere note
-- Note caricate via JSON import statico (non `fs`) — funziona client e server
+- Build leggendo `notes.config.json` per configurabilità (non hardcoded)
 - Lingua italiana per UI e risposte AI
 - NoteSheet custom con framer-motion invece del componente Sheet base-ui (bug removeChild)
 - `marked` per markdown rendering (non react-markdown — conflitto DOM con base-ui)
@@ -121,4 +144,4 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 ## Prossimi passi
 
-Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti nella sezione Funzionalità: (nessuna — tutte completate). Generalizzazione: supporto qualsiasi cartella markdown. AI/RAG: chat multi-turno, sorgenti espandibili, generazione riassunti.
+Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti nella sezione Generalizzazione: (nessuna — completata). AI/RAG: chat multi-turno, sorgenti espandibili, generazione riassunti.

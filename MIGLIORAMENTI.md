@@ -26,7 +26,7 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 
 ## Generalizzazione
 
-- [ ] **Supporto qualsiasi cartella markdown** — rendere configurabile il percorso sorgente e il pattern nomi cartella (rimuovere hardcoded `UpNote_*`), così l'app funziona con qualsiasi raccolta di note markdown + cartella `Files/`
+- [x] **Supporto qualsiasi cartella markdown** — percorso sorgente e pattern cartella configurabili via `notes.config.json` (rimosso hardcoded `UpNote_*`). Nome app configurabile via `NEXT_PUBLIC_APP_NAME` in `.env.local`. Override CLI: `--source`, `--pattern`, `--files-dir`
 
 ## AI / RAG
 

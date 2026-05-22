@@ -61,7 +61,7 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
 
     visNodes.push({
       id: "root",
-      label: "UpNote",
+      label: (process.env.NEXT_PUBLIC_APP_NAME || "Knowledge Explorer").split(" ")[0],
       group: "root",
       color: {
         background: "#6366f1",

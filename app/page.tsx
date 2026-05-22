@@ -271,7 +271,7 @@ export default function Home() {
               <Brain className="h-6 w-6 text-indigo-400" />
               <div className="absolute inset-0 blur-lg bg-indigo-400/40" />
             </div>
-            <span className="shimmer-text">UpNote Explorer</span>
+            <span className="shimmer-text">{process.env.NEXT_PUBLIC_APP_NAME || "Knowledge Explorer"}</span>
           </h2>
         </div>
         <SidebarNav

@@ -1,0 +1,7 @@
+{
+  "source": "..",
+  "pattern": "UpNote_*",
+  "filesDir": "Files",
+  "appName": "UpNote Knowledge Explorer",
+  "appDescription": "Esplora e cerca nelle tue note UpNote con AI"
+}

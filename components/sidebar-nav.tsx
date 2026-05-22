@@ -88,7 +88,7 @@ export function SidebarNav({
         <div className="flex items-center gap-2">
           <BookOpen className="h-3.5 w-3.5 text-muted-foreground/50" />
           <p className="text-xs text-muted-foreground/40">
-            UpNote Knowledge Explorer
+            {process.env.NEXT_PUBLIC_APP_NAME || "Knowledge Explorer"}
           </p>
         </div>
       </div>
