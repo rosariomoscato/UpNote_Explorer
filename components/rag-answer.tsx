@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Note, ChatMessage } from "@/lib/types";
-import { Sparkles, Send, Plus, User, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { Sparkles, Send, Plus, User, ChevronDown, ChevronUp, ExternalLink, Download } from "lucide-react";
 import { marked } from "marked";
 
 interface RagChatProps {
@@ -58,6 +58,39 @@ export function RagChat({
     });
   };
 
+  const handleExport = () => {
+    const appName = process.env.NEXT_PUBLIC_APP_NAME || "Knowledge Explorer";
+    const lines: string[] = [`# ${appName} — Conversazione AI`, ""];
+    for (const msg of messages) {
+      if (msg.role === "user") {
+        lines.push("## Domanda", "", msg.content, "");
+      } else {
+        lines.push("## Risposta", "", msg.content, "");
+        if (msg.sourceIds && msg.sourceIds.length > 0) {
+          const uniqueSources = [...new Set(msg.sourceIds)];
+          const titles = uniqueSources
+            .map((id) => getNoteById(id))
+            .filter(Boolean)
+            .map((n) => n!.title);
+          if (titles.length > 0) {
+            lines.push("**Fonti:** " + titles.map((t) => `*${t}*`).join(", "));
+            lines.push("");
+          }
+        }
+        lines.push("---", "");
+      }
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `conversazione-ai-${new Date().toISOString().slice(0, 10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (messages.length === 0) return null;
 
   return (
@@ -74,6 +107,16 @@ export function RagChat({
           <Plus className="h-3 w-3" />
           Nuova chat
         </button>
+        {!isStreaming && messages.some((m) => m.role === "assistant" && !m.isStreaming) && (
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-foreground px-2.5 py-1.5 rounded-lg hover:bg-accent transition-colors"
+            title="Scarica conversazione come Markdown"
+          >
+            <Download className="h-3 w-3" />
+            Esporta
+          </button>
+        )}
       </div>
 
       <div ref={scrollRef} className="space-y-4 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">

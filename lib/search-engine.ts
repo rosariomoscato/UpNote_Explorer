@@ -69,12 +69,47 @@ export function searchNotes(query: string, limit = 10, category?: string): Searc
 
 export function getRelevantNotes(query: string, limit = 8, category?: string): Note[] {
   if (!query || query.trim().length < 2) return [];
+  const notes = loadNotes();
+  const queryLower = query.toLowerCase();
+  const words = queryLower.split(/\s+/).filter((w) => w.length >= 3);
+
+  const exactMatches = new Set<string>();
+  for (const note of notes) {
+    if (category && note.category !== category) continue;
+    const text = `${note.title} ${note.content}`.toLowerCase();
+    let matchCount = 0;
+    for (const word of words) {
+      if (text.includes(word)) matchCount++;
+    }
+    if (matchCount >= Math.max(1, words.length - 1)) {
+      exactMatches.add(note.id);
+    }
+  }
+
   const fuse = getFuseRag();
-  let results = fuse.search(query, { limit });
+  let results = fuse.search(query, { limit: limit * 3 });
 
   if (category) {
     results = results.filter((r) => r.item.category === category);
   }
 
-  return results.map((r) => r.item);
+  const seen = new Set<string>();
+  const ordered: Note[] = [];
+
+  for (const id of exactMatches) {
+    const note = notes.find((n) => n.id === id);
+    if (note && !seen.has(id)) {
+      seen.add(id);
+      ordered.push(note);
+    }
+  }
+
+  for (const r of results) {
+    if (!seen.has(r.item.id)) {
+      seen.add(r.item.id);
+      ordered.push(r.item);
+    }
+  }
+
+  return ordered.slice(0, limit);
 }
