@@ -1,6 +1,6 @@
-# Stato del Progetto — UpNote Knowledge Explorer
+# Stato del Progetto — My Second Brain
 
-Ultimo aggiornamento: 2026-05-22 (sessione 3)
+Ultimo aggiornamento: 2026-05-22 (sessione 4)
 
 ## Cos'è
 
@@ -23,7 +23,7 @@ upnote-explorer/
 ├── lib/
 │   ├── types.ts               ← Note, GraphNode/Edge, CATEGORY_COLORS
 │   ├── notes-loader.ts        ← caricamento note + getRelatedNotes()
-│   └── search-engine.ts       ← fuse.js doppio (text search + RAG, filtro categoria)
+│   └── search-engine.ts       ← fuse.js doppio (text search + RAG con exact match boost)
 ├── app/
 │   ├── page.tsx               ← pagina principale con tutti gli stati UI
 │   ├── layout.tsx             ← ThemeProvider + TooltipProvider + removeChild fix
@@ -38,7 +38,7 @@ upnote-explorer/
 │   ├── note-sheet.tsx         ← Panel laterale custom (framer-motion) con markdown + allegati + link + breadcrumb + note correlate + export (MD/PDF) + highlight
 │   ├── search-bar.tsx         ← barra ricerca + selettore modalità + keyboard shortcuts + cronologia ricerche
 │   ├── search-results.tsx     ← lista risultati con fade-in animato + navigazione tastiera
-│   ├── rag-answer.tsx         ← chat multi-turno AI (cronologia, follow-up, fonti per messaggio)
+│   ├── rag-answer.tsx         ← chat multi-turno AI (cronologia, follow-up, fonti espandibili, export conversazione)
 │   ├── sidebar-nav.tsx        ← sidebar categorie (filtro cliccabile)
 │   ├── theme-toggle.tsx       ← dark/light toggle
 │   ├── space-background.tsx   ← background spaziale animato (stelle, nebulose, stelle cadenti)
@@ -79,7 +79,7 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
   "source": "..",
   "pattern": "UpNote_*",
   "filesDir": "Files",
-  "appName": "UpNote Knowledge Explorer",
+  "appName": "My Second Brain",
   "appDescription": "Esplora e cerca nelle tue note UpNote con AI"
 }
 ```
@@ -92,9 +92,10 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 ### AI / RAG
 
-- **Chat multi-turno** — la conversazione AI mantiene il contesto tra domande successive. Lo storico messaggi viene passato all'API che lo inoltra al LLM come `messages`. UI con chat thread (domande utente + risposte AI con fonti), input per follow-up in basso, pulsante "Nuova chat" per resettare. Il prompt di sistema include il contesto note aggiornato per ogni domanda
-- **Sorgenti espandibili** — le fonti citate nella risposta AI sono espandibili con click: mostrano preview inline con categoria (badge colorato), snippet contenuto (300 char), e due pulsanti azione: "Leggi tutto" (apre NoteSheet) e "Apri nel grafo" (switch tab Grafo + zoom + selezione nodo). `NoteGraph` espone `focusNode()` via `useImperativeHandle`/`forwardRef`
-- **Generazione riassunti** — bottone "Riassumi" nell'header del NoteSheet. Chiama `/api/summarize` che invia titolo + contenuto + categoria al LLM. Risposta in streaming mostrata in card dedicata (border cyan, icona Sparkles). Card dismissable con X. Si resetta automaticamente al cambio nota
+- **Chat multi-turno** — la conversazione AI mantiene il contesto tra domande successive. Lo storico messaggi viene passato all'API che lo inoltra al LLM come `messages`. UI con chat thread (domande utente + risposte AI con fonti), input per follow-up in basso, pulsante "Nuova chat" per resettare, bottone "Esporta" per scaricare la conversazione come Markdown. Il prompt di sistema include il contesto note aggiornato per ogni domanda. Risposte renderizzate in markdown reale via `marked`
+- **Sorgenti espandibili** — le fonti citate nella risposta AI sono espandibili con click (chevron): mostrano preview inline con categoria (badge colorato), snippet contenuto (300 char), e due pulsanti azione: "Leggi tutto" (apre NoteSheet) e "Apri nel grafo" (switch tab Grafo + zoom + selezione nodo). `NoteGraph` espone `focusNode()` via `useImperativeHandle`/`forwardRef`
+- **Generazione riassunti** — bottone "Riassumi" nell'header del NoteSheet. Chiama `/api/summarize` che invia titolo + contenuto + categoria al LLM. Risposta in streaming mostrata in card dedicata (border cyan, icona Sparkles) con markdown renderizzato. Card dismissable con X. Si resetta automaticamente al cambio nota
+- **RAG search migliorato** — boost per match esatti: le note che contengono le parole chiave della query vengono posizionate in cima ai risultati RAG, prima dei risultati fuzzy di fuse.js. Deduplicazione e merge dei risultati. Risolve il problema di note rilevanti non trovate (es. query specifiche come nomi propri)
 
 - **Supporto qualsiasi cartella markdown** — percorso sorgente e pattern cartella configurabili via `notes.config.json` (rimosso hardcoded `UpNote_*`). Override CLI: `--source`, `--pattern`, `--files-dir`. Nome app nell'UI configurabile via `NEXT_PUBLIC_APP_NAME` in `.env.local`
 
@@ -123,6 +124,9 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 - RAG multi-turno: storico messaggi passato come `messages` al LLM, contesto note aggiornato per ogni domanda
 - `@ai-sdk/openai` `.chat()` (non default) per Chat Completions API — la Responses API default non supporta multi-turno su OpenRouter
+- RAG search: match esatti boostati sopra risultati fuzzy — note con termini della query sempre incluse nel contesto
+- Risposte AI renderizzate come markdown via `marked` con citazioni convertite da `<em>` a `<span class="source-highlight">`
+- Export conversazione AI via Blob API + URL.createObjectURL (stesso pattern di export nota)
 - `@ai-sdk/openai` con `createOpenAI({ baseURL })` per tutti i provider
 - Build leggendo `notes.config.json` per configurabilità (non hardcoded)
 - Lingua italiana per UI e risposte AI

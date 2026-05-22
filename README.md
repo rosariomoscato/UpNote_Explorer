@@ -55,7 +55,7 @@ Il file `notes.config.json` nella root del progetto definisce dove trovare le no
   "source": "..",
   "pattern": "UpNote_*",
   "filesDir": "Files",
-  "appName": "UpNote Knowledge Explorer",
+  "appName": "My Second Brain",
   "appDescription": "Esplora e cerca nelle tue note UpNote con AI"
 }
 ```
@@ -65,7 +65,7 @@ Il file `notes.config.json` nella root del progetto definisce dove trovare le no
 | `source` | Percorso (relativo alla root del progetto o assoluto) della cartella contenente le sottocartelle con le note | `..` |
 | `pattern` | Pattern per selezionare le sottocartelle: `Prefisso_*` (prefisso), `*` (tutte), o nome esatto | `UpNote_*` |
 | `filesDir` | Nome della sottocartella dentro ogni cartella note che contiene gli allegati | `Files` |
-| `appName` | Nome mostrato nei messaggi console del build | `UpNote Knowledge Explorer` |
+| `appName` | Nome mostrato nei messaggi console del build | `My Second Brain` |
 | `appDescription` | Descrizione per i messaggi console | — |
 
 Puoi anche usare flag CLI come override: `--source`, `--pattern`, `--files-dir`.

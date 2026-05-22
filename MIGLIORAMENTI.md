@@ -1,4 +1,4 @@
-# Miglioramenti — UpNote Knowledge Explorer
+# Miglioramenti — My Second Brain
 
 Leggimi prima di ogni sessione per decidere cosa implementare.
 
