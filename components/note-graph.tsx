@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { Note, CATEGORY_COLORS } from "@/lib/types";
@@ -35,7 +35,11 @@ interface VisEdge {
   width?: number;
 }
 
-export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
+export interface NoteGraphHandle {
+  focusNode: (nodeId: string) => void;
+}
+
+export const NoteGraph = forwardRef<NoteGraphHandle, NoteGraphProps>(function NoteGraph({ notes, onNodeClick }: NoteGraphProps, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<unknown>(null);
   const { resolvedTheme } = useTheme();
@@ -247,6 +251,16 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
     });
   }, [notes, onNodeClick, isDark]);
 
+  useImperativeHandle(ref, () => ({
+    focusNode: (nodeId: string) => {
+      const network = networkRef.current as { focus: (id: string, opts?: unknown) => void; selectNodes: (ids: string[]) => void } | null;
+      if (network) {
+        network.focus(nodeId, { scale: 1.5, animation: { duration: 600, easingFunction: "easeInOutQuad" } });
+        network.selectNodes([nodeId]);
+      }
+    },
+  }), []);
+
   useEffect(() => {
     buildGraph();
     return () => {
@@ -304,6 +318,6 @@ export function NoteGraph({ notes, onNodeClick }: NoteGraphProps) {
           </div>
         )}
       </div>
-    </motion.div>
+     </motion.div>
   );
-}
+});

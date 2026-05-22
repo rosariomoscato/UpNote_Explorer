@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { loadNotes, getCategories, getNoteById, getRelatedNotes } from "@/lib/notes-loader";
 import { SearchResult, Note, SearchMode, ChatMessage } from "@/lib/types";
 import { SearchBar } from "@/components/search-bar";
 import { SearchResults } from "@/components/search-results";
 import { RagChat } from "@/components/rag-answer";
 import { NoteGraph } from "@/components/note-graph";
+import type { NoteGraphHandle } from "@/components/note-graph";
 import { NoteSheet } from "@/components/note-sheet";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -35,6 +36,7 @@ export default function Home() {
   const [notesVersion, setNotesVersion] = useState(0);
   const [focusedResultIndex, setFocusedResultIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState("");
+  const graphRef = useRef<NoteGraphHandle>(null);
   const { history: searchHistory, add: addHistory, remove: removeHistory, clear: clearHistory } = useSearchHistory();
 
   const filteredNotes = selectedCategory
@@ -163,6 +165,14 @@ export default function Home() {
   const handleNewChat = useCallback(() => {
     setChatMessages([]);
   }, []);
+
+  const handleSourceOpenInGraph = useCallback((noteId: string) => {
+    setIsLoading(false);
+    setIsStreaming(false);
+    handleNoteClick(noteId);
+    setActiveTab("graph");
+    setTimeout(() => graphRef.current?.focusNode(noteId), 400);
+  }, [handleNoteClick]);
 
   const sendRagQuestion = useCallback(
     async (question: string, existingMessages: ChatMessage[]) => {
@@ -404,7 +414,7 @@ export default function Home() {
 
             <TabsContent value="graph" className="flex-1 min-h-0 mt-0 px-6 pb-6">
               <div className="h-full rounded-xl border border-indigo-500/10">
-                <NoteGraph notes={filteredNotes} onNodeClick={handleNoteClick} />
+                <NoteGraph ref={graphRef} notes={filteredNotes} onNodeClick={handleNoteClick} />
               </div>
             </TabsContent>
 
@@ -436,6 +446,7 @@ export default function Home() {
                       messages={chatMessages}
                       isStreaming={isStreaming}
                       onSourceClick={handleNoteClick}
+                      onSourceOpenInGraph={handleSourceOpenInGraph}
                       onFollowUp={handleFollowUp}
                       onNewChat={handleNewChat}
                       getNoteById={getNoteById}

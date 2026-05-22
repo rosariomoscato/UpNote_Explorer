@@ -31,5 +31,5 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 ## AI / RAG
 
 - [x] **Chat multi-turno** — mantenere il contesto della conversazione invece di una singola domanda
-- [ ] **Sorgenti espandibili** — cliccando su una citazione si apre direttamente la nota nel grafo
+- [x] **Sorgenti espandibili** — cliccando su una fonte si espande una preview inline con categoria, snippet e pulsanti "Leggi tutto" / "Apri nel grafo" (focus + zoom sul nodo)
 - [ ] **Generazione riassunti** — bottone "Riassumi questa nota" nel NoteSheet

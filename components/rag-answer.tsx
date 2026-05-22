@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Note, ChatMessage } from "@/lib/types";
-import { Sparkles, Send, Plus, User } from "lucide-react";
+import { Sparkles, Send, Plus, User, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 
 interface RagChatProps {
   messages: ChatMessage[];
   isStreaming: boolean;
   onSourceClick: (noteId: string) => void;
+  onSourceOpenInGraph: (noteId: string) => void;
   onFollowUp: (question: string) => void;
   onNewChat: () => void;
   getNoteById: (id: string) => Note | undefined;
@@ -17,11 +18,13 @@ export function RagChat({
   messages,
   isStreaming,
   onSourceClick,
+  onSourceOpenInGraph,
   onFollowUp,
   onNewChat,
   getNoteById,
 }: RagChatProps) {
   const [input, setInput] = useState("");
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,6 +46,15 @@ export function RagChat({
       onFollowUp(input.trim());
       setInput("");
     }
+  };
+
+  const toggleSource = (noteId: string) => {
+    setExpandedSources((prev) => {
+      const next = new Set(prev);
+      if (next.has(noteId)) next.delete(noteId);
+      else next.add(noteId);
+      return next;
+    });
   };
 
   if (messages.length === 0) return null;
@@ -93,22 +105,71 @@ export function RagChat({
                 </div>
 
                 {!msg.isStreaming && msg.sourceIds && msg.sourceIds.length > 0 && (
-                  <div className="px-4 pb-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {msg.sourceIds
-                        .map((id) => getNoteById(id))
-                        .filter(Boolean)
-                        .filter((n, i, arr) => arr.findIndex((x) => x?.id === n?.id) === i)
-                        .map((note) => (
-                          <span
-                            key={note!.id}
-                            className="source-highlight text-xs py-1 px-2.5 rounded-lg cursor-pointer border border-amber-500/20 hover:border-amber-400/40 transition-colors"
-                            onClick={() => onSourceClick(note!.id)}
-                          >
-                            {note!.title}
-                          </span>
-                        ))}
-                    </div>
+                  <div className="px-4 pb-3 space-y-1.5">
+                    {msg.sourceIds
+                      .map((id) => getNoteById(id))
+                      .filter(Boolean)
+                      .filter((n, i, arr) => arr.findIndex((x) => x?.id === n?.id) === i)
+                      .map((note) => {
+                        const nid = note!.id;
+                        const isExpanded = expandedSources.has(nid);
+                        return (
+                          <div key={nid}>
+                            <div
+                              className="flex items-center gap-2 group cursor-pointer"
+                              onClick={() => toggleSource(nid)}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-amber-400 shrink-0" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-amber-400 shrink-0" />
+                              )}
+                              <span className="source-highlight text-xs py-1 px-2.5 rounded-lg border border-amber-500/20 group-hover:border-amber-400/40 transition-colors">
+                                {note!.title}
+                              </span>
+                            </div>
+                            {isExpanded && (
+                              <div className="ml-5 mt-1.5 rounded-lg border border-border/40 bg-background/60 p-3 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="text-[10px] px-2 py-0.5 rounded-full border"
+                                    style={{
+                                      borderColor: `${note!.categoryColor}50`,
+                                      color: note!.categoryColor,
+                                      backgroundColor: `${note!.categoryColor}10`,
+                                    }}
+                                  >
+                                    #{note!.category.replace(/_/g, " ")}
+                                  </span>
+                                  {note!.links.length > 0 && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {note!.links.length} collegamenti
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground/70 leading-relaxed">
+                                  {note!.content.slice(0, 300).replace(/\n/g, " ")}...
+                                </p>
+                                <div className="flex items-center gap-2 pt-1">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); onSourceClick(nid); }}
+                                    className="text-[10px] flex items-center gap-1 text-primary/70 hover:text-primary px-2 py-1 rounded-md hover:bg-accent transition-colors"
+                                  >
+                                    Leggi tutto
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); onSourceOpenInGraph(nid); }}
+                                    className="text-[10px] flex items-center gap-1 text-cyan-400/70 hover:text-cyan-400 px-2 py-1 rounded-md hover:bg-cyan-500/10 transition-colors"
+                                  >
+                                    <ExternalLink className="h-2.5 w-2.5" />
+                                    Apri nel grafo
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                   </div>
                 )}
               </div>
