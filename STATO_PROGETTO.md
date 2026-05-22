@@ -1,6 +1,6 @@
 # Stato del Progetto — My Second Brain
 
-Ultimo aggiornamento: 2026-05-22 (sessione 5)
+Ultimo aggiornamento: 2026-05-22 (sessione 5) — repo rinominato da UpNote_Explorer a MySecondBrain
 
 ## Cos'è
 
@@ -52,6 +52,7 @@ upnote-explorer/
 ├── data/notes.json            ← generato dal build (gitignorato)
 ├── data/settings.json         ← impostazioni utente: notes source/pattern + AI key/model (gitignorato)
 ├── public/files/              ← allegati copiati dal build (gitignorato)
+├── public/screenshots/        ← screenshot per README guida utente (7 immagini)
 ├── hooks/
 │   ├── use-search-history.ts  ← hook cronologia ricerche (localStorage, max 20)
 │   └── use-mobile.ts          ← hook responsive breakpoint
@@ -134,6 +135,12 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - **Configurazione AI da UI** — tab AI con campo API Key OpenRouter (password input con toggle visibilità). Pulsante "Verifica chiave" testa la chiave chiamando `GET https://openrouter.ai/api/v1/models`. Se valida: dropdown searchable con lista modelli ordinati (free prima), ogni item mostra nome, ID, badge Free/Paid, context length. Pulsante "Salva" scrive in `data/settings.json`
 - **Persistenza settings** — `data/settings.json` (gitignorato) con struttura `{ notes: { source, pattern, filesDir }, ai: { provider, openrouterApiKey, openrouterModel } }`. Le API route leggono da settings.json con fallback alle variabili d'ambiente in `.env.local`. Prima installazione: campi vuoti, l'utente configura tutto da UI
 
+### Documentazione
+
+- **README come guida utente** — README.md riscritto come guida completa con indice, sezioni per ogni funzionalità (grafo, ricerca, AI, impostazioni, keyboard shortcuts, statistiche), istruzioni primo avvio, configurazione avanzata per sviluppatori
+- **7 screenshot** — catturati con Playwright CLI e inseriti nel README: grafo interattivo, ricerca testuale, chat AI con fonti, nota nel NoteSheet, impostazioni tab Note, impostazioni tab AI, dashboard statistiche
+- **Pulsante Guida** — icona `HelpCircle` nell'header che apre il README su GitHub in una nuova scheda (`https://github.com/rosariomoscato/MySecondBrain#readme`)
+
 ## Decisioni prese
 
 - RAG multi-turno: storico messaggi passato come `messages` al LLM, contesto note aggiornato per ogni domanda
@@ -157,6 +164,9 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - API key restituita mascherata dal GET settings (solo primi 4 e ultimi 4 caratteri), salvata in chiaro nel file
 - Browse cartelle limitato alla root del progetto (no path traversal) — validazione con `path.resolve` + `startsWith`
 - Modelli OpenRouter raggruppati free/paid con ordinamento (free prima) — endpoint `GET /api/settings/models` fa verifica chiave + recupero lista in un'unica chiamata
+- README riscritto come guida utente con screenshot per ogni sezione — non più un semplice README tecnico
+- Screenshot catturati con Playwright CLI (`playwright-cli screenshot`) in automatico, non manualmente
+- Repo rinominato da `UpNote_Explorer` a `MySecondBrain` — aggiornati remote URL + riferimenti in README, page.tsx, STATO_PROGETTO
 
 ## Avvertenze tecniche
 
