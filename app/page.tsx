@@ -15,7 +15,7 @@ import { SpaceBackground } from "@/components/space-background";
 import { Statistics } from "@/components/statistics";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain, Network, RefreshCw, X, BarChart3, Settings } from "lucide-react";
+import { Brain, Network, RefreshCw, X, BarChart3, Settings, HelpCircle } from "lucide-react";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { useSearchHistory } from "@/hooks/use-search-history";
 
@@ -369,6 +369,15 @@ export default function Home() {
           >
             <Settings className="h-4 w-4" />
           </button>
+          <a
+            href="https://github.com/rosariomoscato/UpNote_Explorer#readme"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-background/40 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300"
+            title="Guida utente"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </a>
           <ThemeToggle />
         </header>
 
