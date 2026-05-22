@@ -15,7 +15,8 @@ import { SpaceBackground } from "@/components/space-background";
 import { Statistics } from "@/components/statistics";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain, Network, RefreshCw, X, BarChart3 } from "lucide-react";
+import { Brain, Network, RefreshCw, X, BarChart3, Settings } from "lucide-react";
+import { SettingsDialog } from "@/components/settings-dialog";
 import { useSearchHistory } from "@/hooks/use-search-history";
 
 const allNotes = loadNotes();
@@ -36,6 +37,7 @@ export default function Home() {
   const [notesVersion, setNotesVersion] = useState(0);
   const [focusedResultIndex, setFocusedResultIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const graphRef = useRef<NoteGraphHandle>(null);
   const { history: searchHistory, add: addHistory, remove: removeHistory, clear: clearHistory } = useSearchHistory();
 
@@ -360,6 +362,13 @@ export default function Home() {
           >
             <RefreshCw className={`h-4 w-4 ${isRebuilding ? "animate-spin" : ""}`} />
           </button>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-background/40 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300"
+            title="Impostazioni"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
           <ThemeToggle />
         </header>
 
@@ -539,6 +548,12 @@ export default function Home() {
         onLinkClick={handleLinkClick}
         relatedNotes={relatedNotes}
         highlightQuery={searchQuery}
+      />
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onRebuild={handleRebuild}
       />
 
       <footer className="absolute bottom-0 left-0 right-0 z-10 py-2 text-center">

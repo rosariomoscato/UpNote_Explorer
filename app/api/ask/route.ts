@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getRelevantNotes } from "@/lib/search-engine";
 import { Note } from "@/lib/types";
 import { createOpenAI } from "@ai-sdk/openai";
+import { getSettings } from "@/lib/settings";
 
 const SYSTEM_PROMPT = `Sei un assistente esperto che risponde alle domande dell'utente basandosi ESCLUSIVAMENTE sulle note fornite.
 Regole:
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
     )
     .join("\n\n");
 
-  const llmProvider = process.env.LLM_PROVIDER || "ollama";
+  const settings = getSettings();
+  const llmProvider = settings.ai.provider || process.env.LLM_PROVIDER || "ollama";
 
   try {
     let model;
@@ -62,9 +64,9 @@ export async function POST(request: NextRequest) {
     } else if (llmProvider === "openrouter") {
       const openrouter = createOpenAI({
         baseURL: "https://openrouter.ai/api/v1",
-        apiKey: process.env.OPENROUTER_API_KEY,
+        apiKey: settings.ai.openrouterApiKey || process.env.OPENROUTER_API_KEY,
       });
-      model = openrouter.chat(process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat-v3-0324:free");
+      model = openrouter.chat(settings.ai.openrouterModel || process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat-v3-0324:free");
     } else {
       const ollamaBase = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
       const ollaiOpenAI = createOpenAI({

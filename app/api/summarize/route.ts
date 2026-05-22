@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createOpenAI } from "@ai-sdk/openai";
+import { getSettings } from "@/lib/settings";
 
 const SYSTEM_PROMPT = `Sei un assistente esperto che riassume le note dell'utente.
 Regole:
@@ -11,7 +12,8 @@ Regole:
 6. Il riassunto deve essere lungo al massimo 5-6 righe`;
 
 function createModel() {
-  const llmProvider = process.env.LLM_PROVIDER || "ollama";
+  const settings = getSettings();
+  const llmProvider = settings.ai.provider || process.env.LLM_PROVIDER || "ollama";
 
   if (llmProvider === "openai") {
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -19,9 +21,9 @@ function createModel() {
   } else if (llmProvider === "openrouter") {
     const openrouter = createOpenAI({
       baseURL: "https://openrouter.ai/api/v1",
-      apiKey: process.env.OPENROUTER_API_KEY,
+      apiKey: settings.ai.openrouterApiKey || process.env.OPENROUTER_API_KEY,
     });
-    return openrouter.chat(process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat-v3-0324:free");
+    return openrouter.chat(settings.ai.openrouterModel || process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat-v3-0324:free");
   } else {
     const ollamaBase = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
     const ollama = createOpenAI({ baseURL: `${ollamaBase}/v1`, apiKey: "ollama" });

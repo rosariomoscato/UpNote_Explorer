@@ -38,6 +38,7 @@ yarn-error.log*
 
 # generated notes data
 /data/notes.json
+/data/settings.json
 
 # generated attachment files
 /public/files/

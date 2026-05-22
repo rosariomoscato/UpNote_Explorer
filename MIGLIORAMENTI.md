@@ -33,3 +33,12 @@ Leggimi prima di ogni sessione per decidere cosa implementare.
 - [x] **Chat multi-turno** — mantenere il contesto della conversazione invece di una singola domanda
 - [x] **Sorgenti espandibili** — cliccando su una fonte si espande una preview inline con categoria, snippet e pulsanti "Leggi tutto" / "Apri nel grafo" (focus + zoom sul nodo)
 - [x] **Generazione riassunti** — bottone "Riassumi" nel NoteSheet che chiama l'AI per generare un riassunto conciso della nota, mostrato in card dedicata con streaming
+
+## Impostazioni (Settings UI)
+
+- [x] **Dialog Impostazioni** — icona ⚙️ nell'header che apre un dialog modale centrato con due tab: "Note" e "Intelligenza Artificiale"
+- [x] **Configurazione cartella note da UI** — tab Note con campo percorso + pulsante "Sfoglia" che apre mini file-browser (partenza da root progetto, solo sottocartelle). Campo pattern. Pulsante "Salva e re-indicizza" → aggiorna `notes.config.json` + `data/settings.json` + lancia rebuild
+- [x] **Configurazione AI da UI** — tab AI con campo API Key OpenRouter (password input con toggle visibilità), pulsante "Verifica chiave" → testa la chiave chiamando OpenRouter API, dropdown searchable con lista modelli (tutti con badge Free/Paid), pulsante "Salva"
+- [x] **Persistenza settings** — nuovo file `data/settings.json` (gitignorato) con struttura `{ notes: { source, pattern, filesDir }, ai: { provider, openrouterApiKey, openrouterModel } }`. API route leggono da settings.json con fallback a env vars
+- [x] **API settings** — `GET/PUT /api/settings` per leggere/salvare impostazioni, `GET /api/settings/models` per verificare chiave + lista modelli OpenRouter, `GET /api/settings/browse` per navigare cartelle server
+- [x] **Integrazione API esistenti** — `ask/route.ts` e `summarize/route.ts` leggono modello/API key da settings.json. `rebuild/route.ts` legge source/pattern da settings

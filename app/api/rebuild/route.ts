@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { execSync } from "child_process";
+import { getSettings } from "@/lib/settings";
 
 export async function POST() {
   try {
-    execSync("npx tsx scripts/build-notes.ts --cleanup", {
+    const settings = getSettings();
+    const source = settings.notes.source;
+    const pattern = settings.notes.pattern;
+
+    const cmd = `npx tsx scripts/build-notes.ts --source "${source}" --pattern "${pattern}" --cleanup`;
+
+    execSync(cmd, {
       cwd: process.cwd(),
       stdio: "pipe",
       timeout: 30000,
