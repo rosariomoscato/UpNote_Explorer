@@ -2,10 +2,10 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { loadNotes, getCategories, getNoteById, getRelatedNotes } from "@/lib/notes-loader";
-import { SearchResult, Note, SearchMode } from "@/lib/types";
+import { SearchResult, Note, SearchMode, ChatMessage } from "@/lib/types";
 import { SearchBar } from "@/components/search-bar";
 import { SearchResults } from "@/components/search-results";
-import { RagAnswer } from "@/components/rag-answer";
+import { RagChat } from "@/components/rag-answer";
 import { NoteGraph } from "@/components/note-graph";
 import { NoteSheet } from "@/components/note-sheet";
 import { SidebarNav } from "@/components/sidebar-nav";
@@ -22,8 +22,7 @@ const categories = getCategories();
 
 export default function Home() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [ragAnswer, setRagAnswer] = useState("");
-  const [ragSources, setRagSources] = useState<Note[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -45,10 +44,6 @@ export default function Home() {
   const filteredSearchResults = selectedCategory
     ? searchResults.filter((r) => r.item.category === selectedCategory)
     : searchResults;
-
-  const filteredRagSources = selectedCategory
-    ? ragSources.filter((n) => n.category === selectedCategory)
-    : ragSources;
 
   const activeCategoryColor = selectedCategory
     ? categories.find((c) => c.name === selectedCategory)?.color
@@ -160,11 +155,135 @@ export default function Home() {
 
   const handleClearSearch = useCallback(() => {
     setSearchResults([]);
-    setRagAnswer("");
-    setRagSources([]);
+    setChatMessages([]);
     setLastQuery("");
     setSearchQuery("");
   }, []);
+
+  const handleNewChat = useCallback(() => {
+    setChatMessages([]);
+  }, []);
+
+  const sendRagQuestion = useCallback(
+    async (question: string, existingMessages: ChatMessage[]) => {
+      setIsStreaming(true);
+
+      const userMsgId = `u_${Date.now()}`;
+      const assistantMsgId = `a_${Date.now()}`;
+
+      const updatedMessages = [
+        ...existingMessages,
+        { id: userMsgId, role: "user" as const, content: question },
+        { id: assistantMsgId, role: "assistant" as const, content: "", sourceIds: [], isStreaming: true },
+      ];
+      setChatMessages(updatedMessages);
+
+      const history = existingMessages
+        .filter((m) => !m.isStreaming)
+        .map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+      try {
+        const res = await fetch("/api/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, category: selectedCategory, history }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId
+                ? { ...m, content: err.error || "Errore nella richiesta", isStreaming: false }
+                : m
+            )
+          );
+          setIsStreaming(false);
+          setIsLoading(false);
+          return;
+        }
+
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullAnswer = "";
+        const sourceIds: string[] = [];
+
+        if (reader) {
+          let buffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.sources) {
+                  sourceIds.push(...data.sources.split(","));
+                } else if (data.text) {
+                  fullAnswer += data.text;
+                  setChatMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMsgId
+                        ? { ...m, content: fullAnswer }
+                        : m
+                    )
+                  );
+                } else if (data.error) {
+                  fullAnswer += `\n\nErrore: ${data.error}`;
+                  setChatMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMsgId
+                        ? { ...m, content: fullAnswer }
+                        : m
+                    )
+                  );
+                }
+              } catch {
+                // skip
+              }
+            }
+          }
+        }
+
+        const uniqueSourceIds = [...new Set(sourceIds)];
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? { ...m, sourceIds: uniqueSourceIds, isStreaming: false }
+              : m
+          )
+        );
+      } catch {
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? { ...m, content: "Errore di connessione. Verifica che il provider sia configurato correttamente.", isStreaming: false }
+              : m
+          )
+        );
+      }
+
+      setIsStreaming(false);
+      setIsLoading(false);
+    },
+    [selectedCategory]
+  );
+
+  const handleFollowUp = useCallback(
+    (question: string) => {
+      setIsLoading(true);
+      sendRagQuestion(question, chatMessages);
+    },
+    [chatMessages, sendRagQuestion]
+  );
 
   const handleSearch = useCallback(
     async (query: string, mode: SearchMode) => {
@@ -173,8 +292,7 @@ export default function Home() {
 
       if (mode === "text") {
         setActiveTab("results");
-        setRagAnswer("");
-        setRagSources([]);
+        setChatMessages([]);
         try {
           const catParam = selectedCategory ? `&category=${encodeURIComponent(selectedCategory)}` : "";
           const res = await fetch(`/api/search?q=${encodeURIComponent(query)}${catParam}`);
@@ -187,76 +305,11 @@ export default function Home() {
       } else {
         setActiveTab("results");
         setSearchResults([]);
-        setRagAnswer("");
-        setRagSources([]);
-        setIsStreaming(true);
-
-        try {
-          const res = await fetch("/api/ask", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: query, category: selectedCategory }),
-          });
-
-          if (!res.ok) {
-            const err = await res.json();
-            setRagAnswer(err.error || "Errore nella richiesta");
-            setIsStreaming(false);
-            setIsLoading(false);
-            return;
-          }
-
-          const reader = res.body?.getReader();
-          const decoder = new TextDecoder();
-          let fullAnswer = "";
-          const sourceIds: string[] = [];
-
-          if (reader) {
-            let buffer = "";
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || "";
-
-              for (const line of lines) {
-                if (!line.startsWith("data: ")) continue;
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  if (data.sources) {
-                    sourceIds.push(...data.sources.split(","));
-                  } else if (data.text) {
-                    fullAnswer += data.text;
-                    setRagAnswer(fullAnswer);
-                  } else if (data.error) {
-                    fullAnswer += `\n\nErrore: ${data.error}`;
-                    setRagAnswer(fullAnswer);
-                  }
-                } catch {
-                  // skip
-                }
-              }
-            }
-          }
-
-          const uniqueSourceIds = [...new Set(sourceIds)];
-          const sources = uniqueSourceIds
-            .map((id) => getNoteById(id))
-            .filter(Boolean) as Note[];
-          setRagSources(sources);
-        } catch {
-          setRagAnswer(
-            "Errore di connessione. Verifica che il provider sia configurato correttamente."
-          );
-        }
-
-        setIsStreaming(false);
-        setIsLoading(false);
+        setChatMessages([]);
+        sendRagQuestion(query, []);
       }
     },
-    [selectedCategory]
+    [selectedCategory, sendRagQuestion]
   );
 
   return (
@@ -317,7 +370,7 @@ export default function Home() {
                   className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-200"
                 >
                   Risultati
-                  {(filteredSearchResults.length > 0 || ragAnswer) && (
+                  {(filteredSearchResults.length > 0 || chatMessages.length > 0) && (
                     <span className="ml-1 h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
                   )}
                 </TabsTrigger>
@@ -358,7 +411,7 @@ export default function Home() {
             <TabsContent value="results" className="flex-1 min-h-0 mt-0">
               <ScrollArea className="h-full">
                 <div className="px-6 py-4 max-w-3xl mx-auto space-y-6">
-                  {(filteredSearchResults.length > 0 || ragAnswer) && !isLoading && (
+                  {(filteredSearchResults.length > 0 || chatMessages.length > 0) && !isLoading && (
                     <div className="flex justify-end">
                       <button
                         onClick={handleClearSearch}
@@ -378,12 +431,14 @@ export default function Home() {
                     </div>
                   )}
 
-                  {ragAnswer && (
-                    <RagAnswer
-                      answer={ragAnswer}
-                      sources={filteredRagSources}
+                  {chatMessages.length > 0 && (
+                    <RagChat
+                      messages={chatMessages}
                       isStreaming={isStreaming}
                       onSourceClick={handleNoteClick}
+                      onFollowUp={handleFollowUp}
+                      onNewChat={handleNewChat}
+                      getNoteById={getNoteById}
                     />
                   )}
 
@@ -396,7 +451,7 @@ export default function Home() {
                     />
                   )}
 
-                  {!isLoading && !ragAnswer && filteredSearchResults.length === 0 && (
+                  {!isLoading && chatMessages.length === 0 && filteredSearchResults.length === 0 && (
                     <div className="text-center py-16">
                       <div className="relative inline-block mb-6">
                         <div className="relative">

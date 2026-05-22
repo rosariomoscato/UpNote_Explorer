@@ -11,6 +11,14 @@ export interface Note {
   created: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  sourceIds?: string[];
+  isStreaming?: boolean;
+}
+
 export type SearchMode = "text" | "rag";
 
 export interface SearchResult {

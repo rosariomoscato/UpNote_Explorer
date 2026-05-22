@@ -37,7 +37,7 @@ upnote-explorer/
 │   ├── note-sheet.tsx         ← Panel laterale custom (framer-motion) con markdown + allegati + link + breadcrumb + note correlate + export (MD/PDF) + highlight
 │   ├── search-bar.tsx         ← barra ricerca + selettore modalità + keyboard shortcuts + cronologia ricerche
 │   ├── search-results.tsx     ← lista risultati con fade-in animato + navigazione tastiera
-│   ├── rag-answer.tsx         ← risposta AI con citazioni
+│   ├── rag-answer.tsx         ← chat multi-turno AI (cronologia, follow-up, fonti per messaggio)
 │   ├── sidebar-nav.tsx        ← sidebar categorie (filtro cliccabile)
 │   ├── theme-toggle.tsx       ← dark/light toggle
 │   ├── space-background.tsx   ← background spaziale animato (stelle, nebulose, stelle cadenti)
@@ -89,9 +89,9 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - `appName`/`appDescription`: usati nei messaggi console del build
 - Il nome dell'app nell'UI è configurato via `NEXT_PUBLIC_APP_NAME` in `.env.local`
 
-## Miglioramenti implementati
+### AI / RAG
 
-### Generalizzazione
+- **Chat multi-turno** — la conversazione AI mantiene il contesto tra domande successive. Lo storico messaggi viene passato all'API che lo inoltra al LLM come `messages`. UI con chat thread (domande utente + risposte AI con fonti), input per follow-up in basso, pulsante "Nuova chat" per resettare. Il prompt di sistema include il contesto note aggiornato per ogni domanda
 
 - **Supporto qualsiasi cartella markdown** — percorso sorgente e pattern cartella configurabili via `notes.config.json` (rimosso hardcoded `UpNote_*`). Override CLI: `--source`, `--pattern`, `--files-dir`. Nome app nell'UI configurabile via `NEXT_PUBLIC_APP_NAME` in `.env.local`
 
@@ -118,7 +118,8 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 ## Decisioni prese
 
-- `generateText` (non `streamText`) per RAG — streaming vuoto con OpenRouter
+- RAG multi-turno: storico messaggi passato come `messages` al LLM, contesto note aggiornato per ogni domanda
+- `@ai-sdk/openai` `.chat()` (non default) per Chat Completions API — la Responses API default non supporta multi-turno su OpenRouter
 - `@ai-sdk/openai` con `createOpenAI({ baseURL })` per tutti i provider
 - Build leggendo `notes.config.json` per configurabilità (non hardcoded)
 - Lingua italiana per UI e risposte AI
@@ -144,4 +145,4 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 
 ## Prossimi passi
 
-Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti nella sezione Generalizzazione: (nessuna — completata). AI/RAG: chat multi-turno, sorgenti espandibili, generazione riassunti.
+Aprire `MIGLIORAMENTI.md` e scegliere cosa implementare. Rimanenti in AI/RAG: sorgenti espandibili, generazione riassunti.
