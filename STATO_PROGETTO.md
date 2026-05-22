@@ -1,6 +1,6 @@
 # Stato del Progetto — My Second Brain
 
-Ultimo aggiornamento: 2026-05-22 (sessione 4)
+Ultimo aggiornamento: 2026-05-22 (sessione 5)
 
 ## Cos'è
 
@@ -10,7 +10,7 @@ Web app Next.js che visualizza note markdown come grafo interattivo, con ricerca
 
 - Next.js 16, ShadCN UI, Tailwind CSS v4, vis-network, fuse.js, Vercel AI SDK
 - framer-motion (animazioni), marked (markdown rendering)
-- LLM: OpenRouter (`nvidia/nemotron-3-super-120b-a12b:free`) via `.env.local`
+- LLM: OpenRouter (modello configurabile da UI Impostazioni) via `data/settings.json` (fallback `.env.local`)
 - GitHub: `https://github.com/rosariomoscato/UpNote_Explorer`
 - Git author: `Rosario Moscato <ros.moscato@gmail.com>`
 
@@ -23,7 +23,8 @@ upnote-explorer/
 ├── lib/
 │   ├── types.ts               ← Note, GraphNode/Edge, CATEGORY_COLORS
 │   ├── notes-loader.ts        ← caricamento note + getRelatedNotes()
-│   └── search-engine.ts       ← fuse.js doppio (text search + RAG con exact match boost)
+│   ├── search-engine.ts       ← fuse.js doppio (text search + RAG con exact match boost)
+│   └── settings.ts            ← read/write data/settings.json (notes + AI config, fallback env vars)
 ├── app/
 │   ├── page.tsx               ← pagina principale con tutti gli stati UI
 │   ├── layout.tsx             ← ThemeProvider + TooltipProvider + removeChild fix
@@ -32,7 +33,11 @@ upnote-explorer/
 │       ├── ask/route.ts       ← RAG endpoint (filtro categoria)
 │       ├── search/route.ts    ← fuse.js search (filtro categoria)
 │       ├── summarize/route.ts ← riassunto nota singola via LLM
-│       └── rebuild/route.ts   ← re-index + reload
+│       ├── rebuild/route.ts   ← re-index + reload (legge source/pattern da settings)
+│       └── settings/
+│           ├── route.ts       ← GET/PUT impostazioni (notes + AI)
+│           ├── models/route.ts ← verifica chiave OpenRouter + lista modelli
+│           └── browse/route.ts ← browse sottocartelle server
 ├── components/
 │   ├── note-graph.tsx         ← vis-network grafo con tooltip hover + mini-preview card
 │   ├── note-sheet.tsx         ← Panel laterale custom (framer-motion) con markdown + allegati + link + breadcrumb + note correlate + export (MD/PDF) + highlight
@@ -42,8 +47,10 @@ upnote-explorer/
 │   ├── sidebar-nav.tsx        ← sidebar categorie (filtro cliccabile)
 │   ├── theme-toggle.tsx       ← dark/light toggle
 │   ├── space-background.tsx   ← background spaziale animato (stelle, nebulose, stelle cadenti)
-│   └── statistics.tsx         ← dashboard statistiche (categorie, note più collegate, timeline)
+│   ├── statistics.tsx         ← dashboard statistiche (categorie, note più collegate, timeline)
+│   └── settings-dialog.tsx    ← dialog impostazioni (tab Note: browse cartelle, pattern; tab AI: API key, modelli)
 ├── data/notes.json            ← generato dal build (gitignorato)
+├── data/settings.json         ← impostazioni utente: notes source/pattern + AI key/model (gitignorato)
 ├── public/files/              ← allegati copiati dal build (gitignorato)
 ├── hooks/
 │   ├── use-search-history.ts  ← hook cronologia ricerche (localStorage, max 20)
@@ -120,6 +127,13 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - **Full-text highlight** — termini cercati evidenziati con `<mark class="search-highlight">` nel contenuto della nota aperta nel NoteSheet. Highlight applicato solo al testo visibile (non dentro tag HTML), case-insensitive. Stile adattivo dark/light con sfondo indigo
 - **Cronologia ricerche** — ultime 20 ricerche salvate in localStorage (`upnote-search-history`). Dropdown "Ricerche recenti" al focus sulla search bar: mostra max 10 voci filtrate while-you-type, click per rilanciare, X per rimuovere singola voce, "Cancella tutto" per svuotare. Hook `useSearchHistory` con lazy init (no effect)
 
+### Impostazioni
+
+- **Dialog Impostazioni** — icona ⚙️ nell'header apre dialog modale con due tab: "Note" e "Intelligenza Artificiale"
+- **Configurazione cartella note da UI** — tab Note con campo percorso sorgente + pulsante "Sfoglia" (mini file-browser che naviga sottocartelle dalla root del progetto). Campo pattern cartelle e sottocartella allegati. Pulsante "Salva e re-indicizza" aggiorna `notes.config.json` + `data/settings.json` e lancia il rebuild
+- **Configurazione AI da UI** — tab AI con campo API Key OpenRouter (password input con toggle visibilità). Pulsante "Verifica chiave" testa la chiave chiamando `GET https://openrouter.ai/api/v1/models`. Se valida: dropdown searchable con lista modelli ordinati (free prima), ogni item mostra nome, ID, badge Free/Paid, context length. Pulsante "Salva" scrive in `data/settings.json`
+- **Persistenza settings** — `data/settings.json` (gitignorato) con struttura `{ notes: { source, pattern, filesDir }, ai: { provider, openrouterApiKey, openrouterModel } }`. Le API route leggono da settings.json con fallback alle variabili d'ambiente in `.env.local`. Prima installazione: campi vuoti, l'utente configura tutto da UI
+
 ## Decisioni prese
 
 - RAG multi-turno: storico messaggi passato come `messages` al LLM, contesto note aggiornato per ogni domanda
@@ -139,6 +153,10 @@ Il comando `npm run dev` esegue prima `build-notes.ts` poi `next dev`.
 - Export MD via Blob API + URL.createObjectURL (no dipendenze)
 - Highlight: `highlightHtml()` split HTML per tag e applica `<mark>` solo su text nodes
 - Cronologia: `useState(loadHistory)` con lazy initializer per evitare effect SSR warning
+- Settings persistenti in `data/settings.json` con fallback a env vars — permette configurazione da UI senza modificare `.env.local`
+- API key restituita mascherata dal GET settings (solo primi 4 e ultimi 4 caratteri), salvata in chiaro nel file
+- Browse cartelle limitato alla root del progetto (no path traversal) — validazione con `path.resolve` + `startsWith`
+- Modelli OpenRouter raggruppati free/paid con ordinamento (free prima) — endpoint `GET /api/settings/models` fa verifica chiave + recupero lista in un'unica chiamata
 
 ## Avvertenze tecniche
 
