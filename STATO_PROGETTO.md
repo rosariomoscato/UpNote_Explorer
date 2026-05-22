@@ -11,7 +11,7 @@ Web app Next.js che visualizza note markdown come grafo interattivo, con ricerca
 - Next.js 16, ShadCN UI, Tailwind CSS v4, vis-network, fuse.js, Vercel AI SDK
 - framer-motion (animazioni), marked (markdown rendering)
 - LLM: OpenRouter (modello configurabile da UI Impostazioni) via `data/settings.json` (fallback `.env.local`)
-- GitHub: `https://github.com/rosariomoscato/UpNote_Explorer`
+- GitHub: `https://github.com/rosariomoscato/MySecondBrain`
 - Git author: `Rosario Moscato <ros.moscato@gmail.com>`
 
 ## Struttura chiave

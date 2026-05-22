@@ -370,7 +370,7 @@ export default function Home() {
             <Settings className="h-4 w-4" />
           </button>
           <a
-            href="https://github.com/rosariomoscato/UpNote_Explorer#readme"
+            href="https://github.com/rosariomoscato/MySecondBrain#readme"
             target="_blank"
             rel="noopener noreferrer"
             className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-background/40 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300"

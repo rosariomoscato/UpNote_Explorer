@@ -267,8 +267,8 @@ Il **tab Statistiche** mostra una dashboard con:
 ## Installazione (sviluppatori)
 
 ```bash
-git clone https://github.com/rosariomoscato/UpNote_Explorer.git
-cd UpNote_Explorer/upnote-explorer
+git clone https://github.com/rosariomoscato/MySecondBrain.git
+cd MySecondBrain/upnote-explorer
 npm install
 npm run dev
 ```
